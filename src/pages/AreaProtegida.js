@@ -47,42 +47,78 @@ export default function AreaProtegida() {
             </Pressable>
 
             <Pressable style={styles.card}>
-                <View>
-                    <Text style={styles.cardTitulo}>
-                        Diário de Ocorrências
-                    </Text>
+                <View style={styles.cardConteudo}>
 
-                    <Text style={styles.cardDescricao}>
-                        Registre situações importantes
-                    </Text>
+                    <View style={styles.iconeContainer}>
+                        <Ionicons
+                            name="document-text-outline"
+                            size={22}
+                            color="#D96A98"
+                        />
+                    </View>
+
+                    <View>
+                        <Text style={styles.cardTitulo}>
+                            Diário de Ocorrências
+                        </Text>
+
+                        <Text style={styles.cardDescricao}>
+                            Registre situações importantes
+                        </Text>
+                    </View>
+
                 </View>
 
                 <Text style={styles.seta}>›</Text>
             </Pressable>
 
             <Pressable style={styles.card}>
-                <View>
-                    <Text style={styles.cardTitulo}>
-                        Perfil e Configurações
-                    </Text>
+                <View style={styles.cardConteudo}>
 
-                    <Text style={styles.cardDescricao}>
-                        Seus dados e preferências
-                    </Text>
+                    <View style={styles.iconeContainer}>
+                        <Ionicons
+                            name="person-outline"
+                            size={22}
+                            color="#D96A98"
+                        />
+                    </View>
+
+                    <View>
+                        <Text style={styles.cardTitulo}>
+                            Perfil e Configurações
+                        </Text>
+
+                        <Text style={styles.cardDescricao}>
+                            Seus dados e preferências
+                        </Text>
+                    </View>
+
                 </View>
 
                 <Text style={styles.seta}>›</Text>
             </Pressable>
 
             <Pressable style={styles.card}>
-                <View>
-                    <Text style={styles.cardTitulo}>
-                        Ajuda
-                    </Text>
+                <View style={styles.cardConteudo}>
 
-                    <Text style={styles.cardDescricao}>
-                        Canais de apoio e informações
-                    </Text>
+                    <View style={styles.iconeContainer}>
+                        <Ionicons
+                            name="help-circle-outline"
+                            size={22}
+                            color="#D96A98"
+                        />
+                    </View>
+
+                    <View>
+                        <Text style={styles.cardTitulo}>
+                            Ajuda
+                        </Text>
+
+                        <Text style={styles.cardDescricao}>
+                            Canais de apoio e informações
+                        </Text>
+                    </View>
+
                 </View>
 
                 <Text style={styles.seta}>›</Text>
@@ -180,4 +216,5 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         marginRight: 12,
     },
+
 });
