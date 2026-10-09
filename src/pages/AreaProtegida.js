@@ -1,4 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
 
 export default function AreaProtegida() {
     return (
@@ -19,14 +21,26 @@ export default function AreaProtegida() {
             </View>
 
             <Pressable style={styles.card}>
-                <View>
-                    <Text style={styles.cardTitulo}>
-                        Rede de Apoio
-                    </Text>
+                <View style={styles.cardConteudo}>
 
-                    <Text style={styles.cardDescricao}>
-                        Seus contatos de confiança
-                    </Text>
+                    <View style={styles.iconeContainer}>
+                        <Ionicons
+                            name="people-outline"
+                            size={22}
+                            color="#D96A98"
+                        />
+                    </View>
+
+                    <View>
+                        <Text style={styles.cardTitulo}>
+                            Rede de Apoio
+                        </Text>
+
+                        <Text style={styles.cardDescricao}>
+                            Seus contatos de confiança
+                        </Text>
+                    </View>
+
                 </View>
 
                 <Text style={styles.seta}>›</Text>
@@ -96,20 +110,17 @@ const styles = StyleSheet.create({
         backgroundColor: "#FFF8FA",
         padding: 24,
     },
-
     titulo: {
         fontSize: 26,
         fontWeight: "bold",
         color: "#2E1735",
         marginBottom: 8,
     },
-
     subtitulo: {
         fontSize: 15,
         color: "#403644",
         marginBottom: 18,
     },
-
     banner: {
         height: 135,
         backgroundColor: "#FCE9ED",
@@ -118,11 +129,9 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         marginBottom: 18,
     },
-
     bannerTexto: {
         color: "#C56C88",
     },
-
     card: {
         backgroundColor: "#FFFFFF",
         borderRadius: 14,
@@ -132,24 +141,20 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
     },
-
     cardTitulo: {
         fontSize: 16,
         fontWeight: "bold",
         color: "#2E1735",
     },
-
     cardDescricao: {
         fontSize: 13,
         color: "#777077",
         marginTop: 4,
     },
-
     seta: {
         fontSize: 26,
         color: "#777077",
     },
-
     botao: {
         borderWidth: 1,
         borderColor: "#FF4057",
@@ -158,9 +163,21 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginTop: 10,
     },
-
     botaoTexto: {
         color: "#FF4057",
         fontWeight: "bold",
+    },
+    cardConteudo: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    iconeContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "#FCE9ED",
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 12,
     },
 });
