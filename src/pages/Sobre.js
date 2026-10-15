@@ -18,24 +18,7 @@ export default function Sobre({ navigation }) {
         </Pressable>
       </View>
 
-      <CartaoLista
-        icone="information-circle-outline"
-        titulo="Termos de uso"
-        subtitulo="Informações do aplicativo"
-        aoPressionar={() => {}}
-      />
-      <CartaoLista
-        icone="information-circle-outline"
-        titulo="Política de privacidade"
-        subtitulo="Informações do aplicativo"
-        aoPressionar={() => {}}
-      />
-      <CartaoLista
-        icone="information-circle-outline"
-        titulo="Licenças"
-        subtitulo="Informações do aplicativo"
-        aoPressionar={() => {}}
-      />
+    
     </TelaComRolagem>
   );
 }

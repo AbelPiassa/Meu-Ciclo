@@ -22,24 +22,8 @@ export default function Configuracoes({ navigation }) {
           />
         }
       />
-      <CartaoLista
-        icone="moon-outline"
-        titulo="Tema"
-        subtitulo={perfilFicticio.tema}
-        aoPressionar={() => {}}
-      />
-      <CartaoLista
-        icone="lock-closed-outline"
-        titulo="Privacidade"
-        subtitulo="Configurações do app"
-        aoPressionar={() => {}}
-      />
-      <CartaoLista
-        icone="language-outline"
-        titulo="Idioma"
-        subtitulo="Português (Brasil)"
-        aoPressionar={() => {}}
-      />
+    
+     
       <CartaoLista
         icone="information-circle-outline"
         titulo="Sobre"
