@@ -13,7 +13,7 @@ const ICONES_ABAS = {
   Configuracoes: "settings-outline",
 };
 
-// Abas da fachada: o que aparece como um app comum de ciclo menstrual
+
 export default function NavegacaoFachada() {
   return (
     <Abas.Navigator

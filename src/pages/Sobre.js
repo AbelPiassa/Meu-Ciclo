@@ -1,17 +1,21 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import TelaComRolagem from "../components/TelaComRolagem";
 import CartaoLista from "../components/CartaoLista";
+import useGatilhoTresToques from "../hooks/useGatilhoTresToques";
 import cores from "../tema/cores";
 
-export default function Sobre() {
+
+export default function Sobre({ navigation }) {
+  const registrarToque = useGatilhoTresToques(() => navigation.replace("AreaProtegida"));
+
   return (
     <TelaComRolagem>
       <View style={estilos.cabecalho}>
         <Text style={estilos.nome}>Meu Ciclo</Text>
-        <View>
+        <Pressable onPress={registrarToque} hitSlop={20}>
           <Text style={estilos.versao}>Versão 1.0.0</Text>
           <Text style={estilos.versao}>Aplicativo de bem-estar feminino</Text>
-        </View>
+        </Pressable>
       </View>
 
       <CartaoLista

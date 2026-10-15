@@ -1,7 +1,7 @@
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import cores from "../tema/cores";
 
-export default function CampoTexto({ rotulo, placeholder, valor, aoMudar }) {
+export default function CampoTexto({ rotulo, placeholder, valor, aoMudar, senha }) {
   return (
     <View style={estilos.grupo}>
       <Text style={estilos.rotulo}>{rotulo}</Text>
@@ -11,6 +11,7 @@ export default function CampoTexto({ rotulo, placeholder, valor, aoMudar }) {
         placeholderTextColor="#9a93a3"
         value={valor}
         onChangeText={aoMudar}
+        secureTextEntry={senha}
       />
     </View>
   );
