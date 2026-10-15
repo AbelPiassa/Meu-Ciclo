@@ -20,18 +20,20 @@ export default function Perfil() {
       </View>
 
       <View >
-        <Text>Nome</Text>
+        <Text>Nome (opcional)</Text>
         <TextInput
           style={estilos.input}
+          placeholder="Seu nome ou apelido"
           value={nome}
           onChangeText={setNome}
         />
       </View>
 
       <View>
-        <Text>Telefone  </Text>
+        <Text>Telefone de emergência</Text>
         <TextInput
           style={estilos.input}
+          placeholder="(00) 00000-0000"
           value={telefone}
           onChangeText={setTelefone}
         />
@@ -40,21 +42,36 @@ export default function Perfil() {
       <View style={estilos.cardOpcao}>
 
         <View style={estilos.linhaOpcao}>
-          <Text>Modo disfarce</Text>
-          <Switch
-            value={modoDisfarce}
-            onValueChange={setModoDisfarce}
-          />
-        </View>
+
+          <View style={estilos.textosOpcao}>
+            <Text style={estilos.tituloOpcao}>Modo disfarce</Text>
+            <Text style={estilos.descricaoOpcao}>Abrir sempre no calendário</Text>
+            </View>
+              <Switch
+                value={modoDisfarce}
+                onValueChange={setModoDisfarce}
+                trackColor={{ false: "#D9D9D9", true: "#2F2F2F" }}
+                thumbColor="#FFFFFF"
+                activeThumbColor="#FFFFFF"
+              />
+          </View>
+      </View>
+
+      <View style={estilos.cardOpcao}>
 
         <View style={estilos.linhaOpcao}>
-          <Text >Notificação</Text>
-          <Switch
-            value={notificacoes}
-            onValueChange={setNotificacoes}
-          />
+            <View style={estilos.textosOpcao}>
+              <Text style={estilos.tituloOpcao}>Notificação</Text>
+              <Text style={estilos.descricaoOpcao}>Lembretes de período e ciclo</Text>
+              </View>
+              <Switch
+                value={notificacoes}
+                onValueChange={setNotificacoes}
+                trackColor={{ false: "#D9D9D9", true: "#2F2F2F" }}
+                thumbColor="#ffffff"
+                activeThumbColor="#FFFFFF"
+              />
         </View>
-
       </View>
 
       <Pressable style={estilos.botaoSalvar}>
@@ -69,8 +86,8 @@ const estilos = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#f5f5f5",
-    gap: 16,
+    backgroundColor: "#FCF7F8",
+    gap: 14,
   },
 
   header: {
@@ -82,6 +99,12 @@ const estilos = StyleSheet.create({
   titulo: {
     fontSize: 24,
     fontWeight: "bold",
+  },
+
+  descricaoOpcao:{
+    fontSize:14,
+    lineHeight:18,
+    color: "#64616E",
   },
 
   input: {
@@ -96,10 +119,10 @@ const estilos = StyleSheet.create({
 
   cardOpcao: {
     backgroundColor: "#ffffff",
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 16,
-    borderWidth: 1,
-    borderColor: "#e5e5e5",
+    minHeight: 76,
+    justifyContent: 'center'
   },
 
   linhaOpcao: {
@@ -112,11 +135,26 @@ const estilos = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 10,
-    backgroundColor: "#d96a98",
+    backgroundColor: "#A63270",
   },
 
   textoBotaoSalvar: {
     color: "#ffffff",
     fontWeight: "bold",
   },
+  textosOpcao: {
+  flex: 1,
+  gap: 3,
+},
+tituloOpcao: {
+  fontSize: 18,
+  lineHeight: 23,
+  fontWeight: "bold",
+  color: "#23152F",
+},
+descricaoOpcao: {
+  fontSize: 14,
+  lineHeight: 18,
+  color: "#64616E",
+},
 });
