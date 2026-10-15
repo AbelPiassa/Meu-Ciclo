@@ -1,11 +1,14 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
-import Perfil from './src/pages/Perfil';
+import { NavigationContainer } from '@react-navigation/native';
+import NavegacaoPrincipal from './src/routes/NavegacaoPrincipal';
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <Perfil />
+      <NavigationContainer>
+        <NavegacaoPrincipal />
+      </NavigationContainer>
       <StatusBar style="auto" />
     </View>
   );
@@ -14,7 +17,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FCF7F8"
-    
+    backgroundColor: '#fff',
   },
 });
