@@ -30,4 +30,21 @@ O Meu Ciclo+ utiliza como fachada um aplicativo de acompanhamento do ciclo menst
 - Documento Entrega 1: [adicionar link]
 
 ## Status
-Projeto em fase de planejamento e prototipação — Entrega 1.
+
+Projeto Integrador em desenvolvimento — Entrega 2 (2026).
+
+### Desenvolvimento Mobile
+Aplicativo Meu Ciclo+ em desenvolvimento, utilizando React Native e Expo.
+
+### Data Science
+- Base pública selecionada: SINAN/DATASUS.
+- Recorte: notificações de violência, sexo feminino, Brasil, 2015–2024.
+- Análise exploratória inicial realizada em Python.
+- Verificação de valores ausentes e duplicados na tabela agregada.
+- Gráfico de evolução anual produzido.
+- Documentação disponível em [Data Science](data-science/README.md).
+
+### Próximas etapas
+- Ampliar a análise exploratória.
+- Desenvolver e avaliar o primeiro modelo de Data Science.
+- Continuar a integração entre aplicativo e API.

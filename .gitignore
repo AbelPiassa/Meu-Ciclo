@@ -34,3 +34,16 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+
+# Data Science - Python
+data-science/.venv/
+__pycache__/
+*.pyc
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Arquivos temporarios
+*.log
+
