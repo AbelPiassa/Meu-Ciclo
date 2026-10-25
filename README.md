@@ -25,9 +25,9 @@ O Meu Ciclo+ utiliza como fachada um aplicativo de acompanhamento do ciclo menst
 
 ## Links do Projeto
 
-- Protótipo Figma: [adicionar link]
-- Kanban/Trello: [adicionar link]
-- Documento Entrega 1: [adicionar link]
+- Protótipo Figma: figma.com/design/KyHQFwKu9uuQPcz31Vvlxw/Projeto-Integrador-•-Calendário-e-Apoio-•-Referência-corrigida?t=LPhQt2o1KbzVUFKd-0
+- Kanban/Trello: https://trello.com/b/DkwAFMQM
+
 
 ## Status
 
