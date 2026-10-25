@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-export default function useGatilhoTresToques(aoAcionar, quantidade = 3, janelaMs = 1500) {
+export default function useGatilhoTresToques(aoAcionar, quantidade = 3, janelaMs = 1000) {
   const contagem = useRef(0);
   const horarioUltimoToque = useRef(0);
 
