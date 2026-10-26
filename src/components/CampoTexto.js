@@ -1,17 +1,29 @@
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import cores from "../tema/cores";
 
-export default function CampoTexto({ rotulo, placeholder, valor, aoMudar, senha }) {
+export default function CampoTexto({
+  rotulo,
+  placeholder = "",
+  valor,
+  aoMudar,
+  senha = false,
+  multilinha = false,
+  teclado = undefined,
+  limiteCaracteres = undefined,
+}) {
   return (
     <View style={estilos.grupo}>
       <Text style={estilos.rotulo}>{rotulo}</Text>
       <TextInput
-        style={estilos.input}
+        style={[estilos.input, multilinha && estilos.inputMultilinha]}
         placeholder={placeholder}
         placeholderTextColor="#9a93a3"
         value={valor}
         onChangeText={aoMudar}
         secureTextEntry={senha}
+        multiline={multilinha}
+        keyboardType={teclado}
+        maxLength={limiteCaracteres}
       />
     </View>
   );
@@ -33,5 +45,11 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: "#f6eaee",
     color: cores.textoEscuro,
+  },
+
+  inputMultilinha: {
+    height: 90,
+    paddingVertical: 12,
+    textAlignVertical: "top",
   },
 });

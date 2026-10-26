@@ -17,7 +17,28 @@ export default function Perfil() {
   const [modoDisfarce, setModoDisfarce] = useState(perfilFicticio.modo_disfarce);
   const [notificacoes, setNotificacoes] = useState(perfilFicticio.notificacoes);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const [perfilEncerrado, setPerfilEncerrado] = useState(false);
 
+  function excluirPerfil() {
+    // Encerra apenas esta tela de demonstração; não existe exclusão em servidor.
+    setNome("");
+    setTelefone("");
+    setModoDisfarce(false);
+    setNotificacoes(false);
+    setConfirmandoExclusao(false);
+    setPerfilEncerrado(true);
+  }
+
+  if (perfilEncerrado) {
+    return (
+      <ScrollView style={estilos.container} contentContainerStyle={estilos.conteudo}>
+        <Text style={estilos.subtitulo}>Perfil encerrado</Text>
+        <Text style={estilos.textoApoio}>
+          O perfil foi encerrado nesta demonstração. Nenhuma conta real foi excluída.
+        </Text>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView style={estilos.container} contentContainerStyle={estilos.conteudo}>
@@ -98,7 +119,7 @@ export default function Perfil() {
         titulo="Excluir perfil?"
         mensagem="O perfil será encerrado nesta demonstração."
         textoConfirmar="Confirmar exclusão"
-        aoConfirmar={() => setConfirmandoExclusao(false)}
+        aoConfirmar={excluirPerfil}
         aoCancelar={() => setConfirmandoExclusao(false)}
       />
 

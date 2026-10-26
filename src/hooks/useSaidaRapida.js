@@ -14,7 +14,7 @@ export default function useSaidaRapida() {
           {
             name: "Fachada",
             state: {
-              index: 2,
+              index: 0,
               routes: [
                 { name: "Calendario" },
                 { name: "HistoricoCiclo" },

@@ -12,12 +12,18 @@ export default function MenuAreaProtegida({ navigation }) {
   const sairRapido = useSaidaRapida();
   const [confirmandoSaida, setConfirmandoSaida] = useState(false);
 
+  function encerrarSessaoProtegida() {
+    // Evento local: não envia SMS nem notifica contatos reais.
+    console.info("Alerta simulado para o contato de demonstração. Nenhuma mensagem foi enviada.");
+    setConfirmandoSaida(false);
+    sairRapido();
+  }
+
   return (
     <TelaComRolagem
       titulo="Área protegida"
       subtitulo="Você não está sozinha. Aqui você encontra apoio."
     >
-      {/* Espaço reservado para a ilustração do protótipo */}
       <View style={estilos.ilustracao}>
         <Ionicons name="heart-outline" size={48} color={cores.primaria} />
         <Text style={estilos.textoIlustracao}>Ilustração (placeholder)</Text>
@@ -64,10 +70,7 @@ export default function MenuAreaProtegida({ navigation }) {
         titulo="Encerrar sessão protegida?"
         mensagem="Ao confirmar, o alerta será simulado para o contato configurado e você voltará ao calendário."
         textoConfirmar="Confirmar saída"
-        aoConfirmar={() => {
-          setConfirmandoSaida(false);
-          sairRapido();
-        }}
+        aoConfirmar={encerrarSessaoProtegida}
         aoCancelar={() => setConfirmandoSaida(false)}
       />
     </TelaComRolagem>

@@ -11,6 +11,7 @@ import cores from "../tema/cores";
 const NIVEIS_FLUXO = ["Leve", "Moderado", "Intenso"];
 
 export default function HistoricoCiclo() {
+  const [ciclos, setCiclos] = useState(ciclosFicticios);
   const [cicloSelecionado, setCicloSelecionado] = useState(ciclosFicticios[0]);
   const [dataInicio, setDataInicio] = useState(ciclosFicticios[0].data_inicio);
   const [duracao, setDuracao] = useState("5");
@@ -23,9 +24,38 @@ export default function HistoricoCiclo() {
     setFluxo(ciclo.fluxo);
   }
 
+  function solicitarExclusao() {
+    if (cicloSelecionado == null) {
+      return;
+    }
+
+    setConfirmandoExclusao(true);
+  }
+
+  function excluirRegistro() {
+    if (cicloSelecionado == null) {
+      setConfirmandoExclusao(false);
+      return;
+    }
+
+    setCiclos((listaAtual) =>
+      listaAtual.filter((ciclo) => ciclo.id_ciclo !== cicloSelecionado.id_ciclo)
+    );
+
+    setCicloSelecionado(null);
+    setDataInicio("");
+    setDuracao("");
+    setFluxo("Moderado");
+    setConfirmandoExclusao(false);
+  }
+
   return (
     <TelaComRolagem titulo="Histórico">
-      {ciclosFicticios.map((ciclo) => (
+      {ciclos.length === 0 ? (
+        <Text style={estilos.rotulo}>Nenhum registro menstrual nesta demonstração.</Text>
+      ) : null}
+
+      {ciclos.map((ciclo) => (
         <CartaoLista
           key={ciclo.id_ciclo}
           icone="water-outline"
@@ -60,7 +90,7 @@ export default function HistoricoCiclo() {
       <BotaoPrimario
         texto="Excluir registro selecionado"
         variante="claro"
-        aoPressionar={() => setConfirmandoExclusao(true)}
+        aoPressionar={solicitarExclusao}
       />
 
       <ModalConfirmacao
@@ -68,7 +98,7 @@ export default function HistoricoCiclo() {
         titulo="Excluir registro?"
         mensagem="O registro menstrual selecionado será removido."
         textoConfirmar="Confirmar exclusão"
-        aoConfirmar={() => setConfirmandoExclusao(false)}
+        aoConfirmar={excluirRegistro}
         aoCancelar={() => setConfirmandoExclusao(false)}
       />
     </TelaComRolagem>
