@@ -75,3 +75,20 @@ commits e pull request.
 ### Limitações
 A análise utiliza dados agregados por ano e não permite estimar
 o risco individual das usuárias.
+## Entregas 3 e 4 — Planejamento e primeira implementação do backend
+
+**Frente responsável:** Abel Piassa. **Ferramenta:** ChatGPT/Codex.
+
+- IA leu master e Trello, organizou prazos/checklists e registrou a divisão confirmada:
+  Matheus Albertini no Diário; Abel, Lucca e Matheus em Data Science.
+- Prompt de execução: “Agora precisamos iniciar o desenvolvimento pelas tarefas
+  prioritárias, sem alterar o código dos demais integrantes.”
+- IA implementou a primeira versão de backend Express/SQLite, sessões por perfil,
+  quatro CRUDs, contrato, validações e testes em branch separada.
+- IA executou os testes HTTP locais, lint e verificação de tipos do backend.
+- Abel/grupo ainda precisam revisar o código e o contrato, testar em seu ambiente e
+  integrar as telas. Não atribuímos a eles testes que foram executados pelo assistente.
+- Telas e notebook dos demais integrantes não foram alterados nesta implementação.
+- Foram utilizados apenas dados fictícios; não foi criado indicador de risco individual.
+
+Evidências e limitações: `backend/docs/VALIDACAO.md`.
