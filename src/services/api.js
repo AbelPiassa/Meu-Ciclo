@@ -19,15 +19,20 @@ export async function requisicao(
   }
 
   let resposta;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
 
   try {
     resposta = await fetch(`${API_URL}${caminho}`, {
       method: metodo,
+      signal: controller.signal,
       headers,
       body: dados === undefined ? undefined : JSON.stringify(dados),
     });
   } catch {
-    throw new Error("Não foi possível conectar à API.");
+    throw new Error("Não foi possível conectar à API ou o tempo de espera terminou.");
+  } finally {
+    clearTimeout(timer);
   }
 
   if (resposta.status === 204) {

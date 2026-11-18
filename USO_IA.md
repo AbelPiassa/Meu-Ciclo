@@ -92,3 +92,7 @@ o risco individual das usuárias.
 - Foram utilizados apenas dados fictícios; não foi criado indicador de risco individual.
 
 Evidências e limitações: `backend/docs/VALIDACAO.md`.
+
+
+## 18/11/2026 — Revisão assistida do PR #8
+ChatGPT/Codex revisou PRs #6/#7/#8 a pedido de Abel: “revisar pontos do Lucca, implementar correções, atualizar PR #8, preservar telas dos colegas e não fazer merge”. Implementou Salvar/Excluir Perfil, confirmação com cascata explícita, sessão observável, indicação de conta conectada e encerramento no Quick Exit. Documentou adaptação de Rede de Apoio sem modificar a branch do colega. Executou testes no ambiente do assistente, separados dos testes anteriores acompanhados no computador de Abel. Resultados, limites e roteiro manual em docs/INTEGRACAO_SESSAO.md. Nenhum merge; validação visual do novo código ainda pendente.

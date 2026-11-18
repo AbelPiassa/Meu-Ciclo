@@ -3,25 +3,28 @@ import {
   guardarSessao,
   obterSessao,
   requisicaoAutenticada,
-  encerrarSessao,
+  limparSessao,
+  obterVersaoSessao,
 } from "./sessao.js";
 
 export async function entrar(usuario, senha) {
+  const versao = obterVersaoSessao();
   const resposta = await requisicao("/api/sessoes", {
     metodo: "POST",
     dados: { usuario, senha },
   });
 
-  return guardarSessao(resposta);
+  return guardarSessao(resposta, versao);
 }
 
 export async function cadastrarPerfil(dados) {
+  const versao = obterVersaoSessao();
   const resposta = await requisicao("/api/perfis", {
     metodo: "POST",
     dados,
   });
 
-  guardarSessao(resposta);
+  guardarSessao(resposta, versao);
   return resposta.perfil;
 }
 
@@ -49,9 +52,10 @@ export async function atualizarPerfil(dados) {
 }
 
 export async function excluirPerfil() {
+  const sessao = obterSessao();
   await requisicaoAutenticada(caminhoDoPerfil(), {
     metodo: "DELETE",
   });
 
-  encerrarSessao();
+  limparSessao(sessao);
 }

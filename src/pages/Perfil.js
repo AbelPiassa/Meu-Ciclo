@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -9,10 +9,21 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { consultarPerfil } from "../services/perfil.js";
+import { consultarPerfil, atualizarPerfil, excluirPerfil } from "../services/perfil.js";
+import useSessao from "../hooks/useSessao";
+import useSaidaRapida from "../hooks/useSaidaRapida";
+import { obterSessao } from "../services/sessao.js";
 import cores from "../tema/cores";
 
 export default function Perfil() {
+  const sessao = useSessao();
+  const sairRapido = useSaidaRapida();
+  const montado = useRef(true);
+  const ocupado = useRef(false);
+  const [salvando, setSalvando] = useState(false);
+  const [confirmar, setConfirmar] = useState(false);
+  const [aviso, setAviso] = useState("");
+  useEffect(() => { montado.current = true; return () => { montado.current = false; }; }, []);
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [modoDisfarce, setModoDisfarce] = useState(true);
@@ -59,7 +70,38 @@ export default function Perfil() {
     return () => {
       ativo = false;
     };
-  }, [tentativa]);
+  }, [tentativa, sessao]);
+
+  async function executar(excluir = false) {
+    if (ocupado.current || !sessao) return;
+    const telefoneLimpo = telefone.replace(/\D/g, "");
+    if (!excluir && !/^\d{10,11}$/.test(telefoneLimpo)) {
+      setAviso("Informe telefone com DDD, com 10 ou 11 dígitos.");
+      return;
+    }
+    ocupado.current = true;
+    setSalvando(true);
+    setAviso("");
+    try {
+      if (excluir) {
+        await excluirPerfil();
+        if (montado.current && !obterSessao()) sairRapido();
+      } else {
+        const perfil = await atualizarPerfil({ nome: nome.trim(), telefone_emergencia: telefoneLimpo,
+          modo_disfarce: modoDisfarce, notificacoes, tema });
+        if (montado.current && obterSessao() === sessao) {
+          setNome(perfil.nome);
+          setTelefone(perfil.telefone_emergencia);
+          setAviso("Perfil salvo com sucesso.");
+        }
+      }
+    } catch (erro) {
+      if (montado.current && obterSessao() === sessao) setAviso(erro.message);
+    } finally {
+      ocupado.current = false;
+      if (montado.current) { setSalvando(false); setConfirmar(false); }
+    }
+  }
 
   if (carregando) {
     return (
@@ -72,13 +114,13 @@ export default function Perfil() {
     );
   }
 
-  if (mensagemErro) {
+  if (mensagemErro || !sessao) {
     return (
       <ScrollView
         style={estilos.container}
         contentContainerStyle={estilos.conteudo}
       >
-        <Text style={estilos.textoApoio}>{mensagemErro}</Text>
+        <Text style={estilos.textoApoio}>{mensagemErro || "Entre novamente em Minha conta."}</Text>
 
         <Pressable
           style={estilos.botaoSalvar}
@@ -110,6 +152,7 @@ export default function Perfil() {
         <TextInput
           style={estilos.input}
           placeholder="Seu nome ou apelido"
+          editable={!salvando}
           value={nome}
           onChangeText={setNome}
           maxLength={100}
@@ -121,6 +164,7 @@ export default function Perfil() {
         <TextInput
           style={estilos.input}
           placeholder="(00) 00000-0000"
+          editable={!salvando}
           value={telefone}
           onChangeText={setTelefone}
           keyboardType="phone-pad"
@@ -137,6 +181,7 @@ export default function Perfil() {
           </View>
 
           <Switch
+            disabled={salvando}
             value={modoDisfarce}
             onValueChange={setModoDisfarce}
             trackColor={{ true: cores.primaria }}
@@ -159,6 +204,7 @@ export default function Perfil() {
           </View>
 
           <Switch
+            disabled={salvando}
             value={notificacoes}
             onValueChange={setNotificacoes}
             trackColor={{ true: cores.primaria }}
@@ -171,27 +217,39 @@ export default function Perfil() {
       </Text>
 
       <Text style={estilos.textoApoio}>
-        As preferências abaixo pertencem à sua conta.
-        Alterações ainda não serão salvas nesta etapa.
+        Preferências da conta. A aplicação de tema e lembretes ainda depende da integração desses recursos.
       </Text>
 
       <Pressable
-        style={[estilos.botaoSalvar, estilos.botaoDesativado]}
-        disabled
+        style={[estilos.botaoSalvar, salvando && estilos.botaoDesativado]}
+        disabled={salvando}
+        onPress={() => executar(false)}
       >
         <Text style={estilos.textoBotaoSalvar}>
-          Salvar — em integração
+          {salvando ? "Processando..." : "Salvar"}
         </Text>
       </Pressable>
 
       <Pressable
-        style={[estilos.botaoExcluir, estilos.botaoDesativado]}
-        disabled
+        style={[estilos.botaoExcluir, salvando && estilos.botaoDesativado]}
+        disabled={salvando}
+        onPress={() => setConfirmar(true)}
       >
         <Text style={estilos.textoBotaoExcluir}>
-          Excluir perfil — em integração
+          Excluir perfil
         </Text>
       </Pressable>
+      {aviso ? <Text accessibilityRole="alert" style={estilos.textoApoio}>{aviso}</Text> : null}
+      {confirmar ? (
+        <View style={estilos.cardOpcao}>
+          <Text style={estilos.subtitulo}>Excluir perfil definitivamente?</Text>
+          <Text style={estilos.textoApoio}>Isso apaga a conta e todos os ciclos, contatos e ocorrências vinculados. Não é possível desfazer.</Text>
+          <Pressable disabled={salvando} style={estilos.botaoExcluir} onPress={() => executar(true)}>
+            <Text style={estilos.textoBotaoExcluir}>Confirmar exclusão</Text>
+          </Pressable>
+          <Pressable disabled={salvando} onPress={() => setConfirmar(false)}><Text>Cancelar</Text></Pressable>
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
