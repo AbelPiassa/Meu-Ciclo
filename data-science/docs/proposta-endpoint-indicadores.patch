@@ -1,0 +1,46 @@
+diff --git a/backend/src/app.js b/backend/src/app.js
+index 1757058..9c62357 100644
+--- a/backend/src/app.js
++++ b/backend/src/app.js
+@@ -4,6 +4,7 @@ import helmet from 'helmet';
+ import { rateLimit } from 'express-rate-limit';
+ import { ZodError } from 'zod';
+ import { createProfileSchema, profileSchema, credentialsSchema, idSchema, resources } from './validation.js';
++import { readFileSync } from 'node:fs';
+ import { hashPassword, checkPassword, tokenHash, createSession } from './auth.js';
+ 
+ const profileColumns = 'id_perfil,usuario,nome,telefone_emergencia,modo_disfarce,notificacoes,tema';
+@@ -21,7 +22,7 @@ function sqlValues(data) {
+ function fail(res, status, code, message) { return res.status(status).json({ erro: { codigo: code, mensagem: message } }); }
+ 
+ /** @param {import('node:sqlite').DatabaseSync} db @param {{corsOrigins?: string[]}} options */
+-export function createApp(db, { corsOrigins = [] } = {}) {
++export function createApp(db, { corsOrigins = [], indicadorPath } = {}) {
+   const app = express();
+   app.disable('x-powered-by');
+   app.use(helmet());
+@@ -68,6 +69,11 @@ export function createApp(db, { corsOrigins = [] } = {}) {
+     res.locals.perfilId = Number(session.id_perfil); res.locals.tokenHash = hash;
+     next();
+   });
++  // Indicador agregado de Data Science (somente leitura, igual para todos; nunca por perfil).
++  app.get('/api/indicadores/notificacoes', (_req, res) => {
++    if (!indicadorPath) return fail(res, 404, 'NAO_ENCONTRADO', 'Indicador não configurado.');
++    return res.json(JSON.parse(readFileSync(indicadorPath, 'utf8')));
++  });
+   app.delete('/api/sessoes/atual', (_req, res) => {
+     db.prepare('DELETE FROM sessoes WHERE token_hash = ?').run(res.locals.tokenHash);
+     res.sendStatus(204);
+diff --git a/backend/src/server.js b/backend/src/server.js
+index 456805d..d6ac6b0 100644
+--- a/backend/src/server.js
++++ b/backend/src/server.js
+@@ -3,7 +3,7 @@ import { createApp } from './app.js';
+ const port = Number(process.env.PORT ?? 3000);
+ if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT inválida.');
+ const db = openDatabase(process.env.DATABASE_PATH ?? './data/meu-ciclo.sqlite');
+-const app = createApp(db, { corsOrigins: (process.env.CORS_ORIGINS ?? '').split(',').map(v => v.trim()).filter(Boolean) });
++const app = createApp(db, { indicadorPath: process.env.INDICADOR_PATH, corsOrigins: (process.env.CORS_ORIGINS ?? '').split(',').map(v => v.trim()).filter(Boolean) });
+ const server = app.listen(port, process.env.HOST ?? '127.0.0.1', () => {
+   console.info(`Meu Ciclo API na porta ${port}. Ambiente acadêmico: apenas dados fictícios.`);
+ });

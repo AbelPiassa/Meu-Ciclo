@@ -75,3 +75,13 @@ commits e pull request.
 ### Limitações
 A análise utiliza dados agregados por ano e não permite estimar
 o risco individual das usuárias.
+
+---
+
+## Entrega 4 — Diário de Ocorrências e Data Science (Claude, Anthropic)
+
+**Integrantes:** Matheus
+
+**Onde foi utilizado:** revisão do CRUD do Diário e integração com a API; testes automatizados; análise de viabilidade e validação cruzada temporal da série SINAN; geração do notebook e do indicador agregado; documentação.
+
+**Revisão do grupo:** a conferir por quem integra (código, testes e conclusões devem ser lidos e executados antes da entrega). A conferência do CSV com o TabNet segue pendente.

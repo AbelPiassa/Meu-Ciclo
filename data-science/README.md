@@ -99,3 +99,16 @@ todas as células.
 
 Não utilizar os resultados para classificar o risco
 individual das usuárias do aplicativo.
+
+## 9. Entrega 4 — modelagem e indicador agregado
+
+* Notebook executado: `notebooks/02_modelo_serie_temporal_sinan.ipynb` (viabilidade, validação cruzada temporal, gráficos, limitações).
+* Código reutilizável: `modelo/serie_sinan.py`. Gerar o indicador: `python -m modelo.serie_sinan` (a partir de `data-science/`).
+* Artefato para a API: `saidas/indicador_notificacoes_agregado.json`. Integração: `docs/INTEGRACAO_API.md`.
+* Testes: `python -m pytest testes -q` (12 testes).
+
+**Resultado:** a base (10 anos × 1 variável) não permite modelo supervisionado nem risco individual. Foi testada previsão agregada de 1 passo
+(5 dobras de rolling origin). Com critérios fixados antes (MASE < 1, MAPE ≤ 10%, pior ano ≤ 20%), **nenhum modelo atingiu desempenho suficiente**
+(melhor: deriva, MAPE 15,6%). O indicador é, portanto, descritivo, com projeção marcada como confiança baixa.
+
+**Pendência de fonte:** conferir o CSV com o TabNet; um estudo publicado relata ~670 mil notificações em 2023 contra 419.967 no CSV (ver notebook, seção 6).

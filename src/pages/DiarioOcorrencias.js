@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import TelaComRolagem from "../components/TelaComRolagem";
@@ -6,19 +6,45 @@ import CartaoLista from "../components/CartaoLista";
 import CampoTexto from "../components/CampoTexto";
 import BotaoPrimario from "../components/BotaoPrimario";
 import ModalConfirmacao from "../components/ModalConfirmacao";
-import { ocorrenciasFicticias, canaisAjuda } from "../dados/dadosFicticios";
+import useSessaoApi from "../hooks/useSessaoApi";
+import { ErroApi } from "../servicos/clienteApi";
+import { entrar } from "../servicos/sessao";
+import * as ocorrenciasApi from "../servicos/ocorrenciasApi";
+import { formatarData } from "../utils/datas";
+import { validarOcorrencia, LIMITE_DESCRICAO } from "../utils/validacaoOcorrencia";
+import { canaisAjuda } from "../dados/dadosFicticios";
 import cores from "../tema/cores";
 
+// Diário de Ocorrências integrado à API (GET/POST/PUT/DELETE /api/ocorrencias).
+// Segurança: os relatos ficam só na memória da tela (nada em disco/log) e são descartados
+// quando a tela fecha ou a sessão termina. Os canais de ajuda funcionam mesmo sem a API.
 export default function DiarioOcorrencias() {
-  const ocorrenciaInicial = ocorrenciasFicticias[0] ?? null;
+  const sessao = useSessaoApi();
 
-  const [ocorrencias, setOcorrencias] = useState(ocorrenciasFicticias);
-  const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(ocorrenciaInicial);
-  const [data, setData] = useState(ocorrenciaInicial?.data_ocorrencia ?? "");
-  const [descricao, setDescricao] = useState(ocorrenciaInicial?.descricao_relato ?? "");
+  const [ocorrencias, setOcorrencias] = useState([]);
+  const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(null);
+  const [data, setData] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  const [erroCarga, setErroCarga] = useState("");
+  const [salvando, setSalvando] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState(false);
+  const [usuario, setUsuario] = useState("");
+  const [senha, setSenha] = useState("");
+
+  // Trava síncrona contra toque duplo (o estado só atualiza no próximo render).
+  const operacaoEmAndamento = useRef(false);
+  const montada = useRef(true);
+  const cargaAtual = useRef(0);
+
+  useEffect(() => {
+    montada.current = true;
+    return () => {
+      montada.current = false;
+    };
+  }, []);
 
   function selecionarOcorrencia(ocorrencia) {
     setOcorrenciaSelecionada(ocorrencia);
@@ -36,95 +62,131 @@ export default function DiarioOcorrencias() {
     setErro(false);
   }
 
-  function formatarData(valor) {
-    // Mantém até oito números e acrescenta as barras durante a digitação.
-    const numeros = valor.replace(/\D/g, "").slice(0, 8);
-
-    if (numeros.length <= 2) {
-      return numeros;
-    }
-
-    if (numeros.length <= 4) {
-      return `${numeros.slice(0, 2)}/${numeros.slice(2)}`;
-    }
-
-    return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4)}`;
+  function mostrarErro(falha) {
+    // Mensagens de ErroApi já são em português e sem dados sensíveis.
+    setMensagem(falha instanceof ErroApi ? falha.message : "Não foi possível concluir a operação.");
+    setErro(true);
   }
 
-  function dataValida(valor) {
-    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(valor)) {
-      return false;
+  const carregar = useCallback(async () => {
+    const numeroDaCarga = ++cargaAtual.current;
+    setCarregando(true);
+    setErroCarga("");
+
+    try {
+      const lista = await ocorrenciasApi.listarOcorrencias();
+      if (!montada.current || numeroDaCarga !== cargaAtual.current) {
+        return;
+      }
+      setOcorrencias(lista);
+      setOcorrenciaSelecionada((atual) =>
+        atual && lista.some((item) => item.id_ocorrencia === atual.id_ocorrencia) ? atual : null
+      );
+    } catch (falha) {
+      if (montada.current && numeroDaCarga === cargaAtual.current) {
+        setErroCarga(falha instanceof ErroApi ? falha.message : "Não foi possível carregar as ocorrências.");
+      }
+    } finally {
+      if (montada.current && numeroDaCarga === cargaAtual.current) {
+        setCarregando(false);
+      }
     }
+  }, []);
 
-    const [dia, mes, ano] = valor.split("/").map(Number);
-    const dataInformada = new Date(0);
-    dataInformada.setUTCFullYear(ano, mes - 1, dia);
-
-    // Impede datas inexistentes, como 31/02/2026.
-    return ano > 0 &&
-      dataInformada.getUTCFullYear() === ano &&
-      dataInformada.getUTCMonth() === mes - 1 &&
-      dataInformada.getUTCDate() === dia;
-  }
+  // Carrega ao entrar na tela / ao autenticar; descarta os relatos quando a sessão termina.
+  useEffect(() => {
+    if (sessao.ativa) {
+      carregar();
+      return;
+    }
+    cargaAtual.current++;
+    setOcorrencias([]);
+    setOcorrenciaSelecionada(null);
+    setData("");
+    setDescricao("");
+    setCarregando(false);
+    setErroCarga("");
+  }, [sessao.ativa, sessao.idPerfil, carregar]);
 
   function validarFormulario() {
-    if (!data.trim() || !descricao.trim()) {
-      setMensagem("Preencha a data e a descrição da ocorrência.");
+    const resultado = validarOcorrencia({ data, descricao });
+    if (!resultado.valido) {
+      setMensagem(resultado.mensagem);
       setErro(true);
-      return false;
     }
-
-    if (!dataValida(data)) {
-      setMensagem("Informe uma data válida no formato DD/MM/AAAA.");
-      setErro(true);
-      return false;
-    }
-
-    return true;
+    return resultado.valido;
   }
 
-  function cadastrarOcorrencia() {
+  // Executa uma operação de rede com trava de duplo toque e tratamento único de erros.
+  async function executar(operacao) {
+    if (operacaoEmAndamento.current) {
+      return;
+    }
+    operacaoEmAndamento.current = true;
+    setSalvando(true);
+    try {
+      await operacao();
+    } catch (falha) {
+      if (montada.current) {
+        mostrarErro(falha);
+        if (falha instanceof ErroApi && falha.tipo === "naoEncontrado") {
+          carregar();
+        }
+      }
+    } finally {
+      operacaoEmAndamento.current = false;
+      if (montada.current) {
+        setSalvando(false);
+      }
+    }
+  }
+
+  async function entrarNaApi() {
+    await executar(async () => {
+      await entrar(usuario, senha);
+      setUsuario("");
+      setSenha("");
+      setMensagem("");
+      setErro(false);
+    });
+  }
+
+  async function cadastrarOcorrencia() {
     if (ocorrenciaSelecionada !== null || !validarFormulario()) {
       return;
     }
 
-    const ocorrencia = {
-      id_ocorrencia: Date.now(),
-      id_perfil: 1,
-      data_ocorrencia: data,
-      tipo_ocorrencia: "Relato do diário",
-      descricao_relato: descricao.trim(),
-      como_se_sentiu: "",
-      nivel_perigo: "Não informado",
-      acionou_policia: false,
-    };
-
-    setOcorrencias((listaAtual) => [...listaAtual, ocorrencia]);
-    selecionarOcorrencia(ocorrencia);
-    setMensagem("Ocorrência cadastrada nesta demonstração.");
+    await executar(async () => {
+      const criada = await ocorrenciasApi.criarOcorrencia({ data, descricao });
+      if (!montada.current) {
+        return;
+      }
+      setOcorrencias((listaAtual) => ocorrenciasApi.ordenarOcorrencias([...listaAtual, criada]));
+      selecionarOcorrencia(criada);
+      setMensagem("Ocorrência cadastrada.");
+    });
   }
 
-  function atualizarOcorrencia() {
+  async function atualizarOcorrencia() {
     if (ocorrenciaSelecionada === null || !validarFormulario()) {
       return;
     }
 
-    const ocorrenciaAtualizada = {
-      ...ocorrenciaSelecionada,
-      data_ocorrencia: data,
-      descricao_relato: descricao.trim(),
-    };
-
-    setOcorrencias((listaAtual) =>
-      listaAtual.map((ocorrencia) =>
-        ocorrencia.id_ocorrencia === ocorrenciaSelecionada.id_ocorrencia
-          ? ocorrenciaAtualizada
-          : ocorrencia
-      )
-    );
-
-    selecionarOcorrencia(ocorrenciaAtualizada);
-    setMensagem("Ocorrência atualizada nesta demonstração.");
+    await executar(async () => {
+      const atualizada = await ocorrenciasApi.atualizarOcorrencia(ocorrenciaSelecionada, { data, descricao });
+      if (!montada.current) {
+        return;
+      }
+      setOcorrencias((listaAtual) =>
+        ocorrenciasApi.ordenarOcorrencias(
+          listaAtual.map((ocorrencia) =>
+            ocorrencia.id_ocorrencia === atualizada.id_ocorrencia ? atualizada : ocorrencia
+          )
+        )
+      );
+      selecionarOcorrencia(atualizada);
+      setMensagem("Ocorrência atualizada.");
+    });
   }
 
   function salvarOcorrencia() {
@@ -146,21 +208,23 @@ export default function DiarioOcorrencias() {
     setConfirmandoExclusao(true);
   }
 
-  function excluirOcorrencia() {
-    if (ocorrenciaSelecionada === null) {
-      setConfirmandoExclusao(false);
+  async function excluirOcorrencia() {
+    const alvo = ocorrenciaSelecionada;
+    setConfirmandoExclusao(false);
+
+    if (alvo === null) {
       return;
     }
 
-    setOcorrencias((listaAtual) =>
-      listaAtual.filter(
-        (ocorrencia) => ocorrencia.id_ocorrencia !== ocorrenciaSelecionada.id_ocorrencia
-      )
-    );
-
-    novaOcorrencia();
-    setConfirmandoExclusao(false);
-    setMensagem("Ocorrência excluída nesta demonstração.");
+    await executar(async () => {
+      await ocorrenciasApi.excluirOcorrencia(alvo.id_ocorrencia);
+      if (!montada.current) {
+        return;
+      }
+      setOcorrencias((listaAtual) => listaAtual.filter((item) => item.id_ocorrencia !== alvo.id_ocorrencia));
+      novaOcorrencia();
+      setMensagem("Ocorrência excluída.");
+    });
   }
 
   async function abrirCanalAjuda(canal) {
@@ -189,45 +253,71 @@ export default function DiarioOcorrencias() {
         </Pressable>
       </View>
 
-      {ocorrencias.length === 0 ? (
-        <Text style={estilos.textoApoio}>Nenhuma ocorrência registrada. Use o formulário para adicionar.</Text>
-      ) : null}
+      {!sessao.ativa ? (
+        <>
+          <Text style={estilos.subtitulo}>Entrar para abrir o diário</Text>
+          <Text style={estilos.textoApoio}>
+            Seus relatos são salvos no servidor do projeto, ligados ao seu perfil. Entre com o usuário cadastrado.
+          </Text>
+          <CampoTexto rotulo="Usuário" placeholder="usuario" valor={usuario} aoMudar={setUsuario} />
+          <CampoTexto rotulo="Senha" placeholder="********" valor={senha} aoMudar={setSenha} senha />
+          <BotaoPrimario texto={salvando ? "Entrando..." : "Entrar"} aoPressionar={entrarNaApi} />
+        </>
+      ) : (
+        <>
+          {carregando ? <Text style={estilos.textoApoio}>Carregando ocorrências...</Text> : null}
 
-      {ocorrencias.map((ocorrencia) => (
-        <CartaoLista
-          key={ocorrencia.id_ocorrencia}
-          icone="document-text-outline"
-          titulo={`${ocorrencia.data_ocorrencia} • ${ocorrencia.tipo_ocorrencia}`}
-          subtitulo={ocorrencia.descricao_relato}
-          selecionado={ocorrencia.id_ocorrencia === ocorrenciaSelecionada?.id_ocorrencia}
-          aoPressionar={() => selecionarOcorrencia(ocorrencia)}
-        />
-      ))}
+          {erroCarga ? (
+            <>
+              <Text style={[estilos.textoApoio, estilos.textoErro]} accessibilityLiveRegion="polite">
+                {erroCarga}
+              </Text>
+              <BotaoPrimario texto="Tentar novamente" variante="claro" aoPressionar={carregar} />
+            </>
+          ) : null}
 
-      <Text style={estilos.subtitulo}>Adicionar ou editar ocorrência</Text>
+          {!carregando && !erroCarga && ocorrencias.length === 0 ? (
+            <Text style={estilos.textoApoio}>Nenhuma ocorrência registrada. Use o formulário para adicionar.</Text>
+          ) : null}
 
-      <CampoTexto
-        rotulo="Data"
-        placeholder="DD/MM/AAAA"
-        valor={data}
-        aoMudar={(texto) => setData(formatarData(texto))}
-        teclado="numeric"
-        limiteCaracteres={10}
-      />
-      <CampoTexto
-        rotulo="Descrição"
-        placeholder="Descreva o que aconteceu..."
-        valor={descricao}
-        aoMudar={setDescricao}
-        multilinha
-      />
+          {ocorrencias.map((ocorrencia) => (
+            <CartaoLista
+              key={ocorrencia.id_ocorrencia}
+              icone="document-text-outline"
+              titulo={`${ocorrencia.data_ocorrencia} • ${ocorrencia.tipo_ocorrencia}`}
+              subtitulo={ocorrencia.descricao_relato}
+              selecionado={ocorrencia.id_ocorrencia === ocorrenciaSelecionada?.id_ocorrencia}
+              aoPressionar={() => selecionarOcorrencia(ocorrencia)}
+            />
+          ))}
 
-      <BotaoPrimario texto="Salvar ocorrência" aoPressionar={salvarOcorrencia} />
-      <BotaoPrimario
-        texto="Excluir ocorrência selecionada"
-        variante="claro"
-        aoPressionar={solicitarExclusao}
-      />
+          <Text style={estilos.subtitulo}>Adicionar ou editar ocorrência</Text>
+
+          <CampoTexto
+            rotulo="Data"
+            placeholder="DD/MM/AAAA"
+            valor={data}
+            aoMudar={(texto) => setData(formatarData(texto))}
+            teclado="numeric"
+            limiteCaracteres={10}
+          />
+          <CampoTexto
+            rotulo="Descrição"
+            placeholder="Descreva o que aconteceu..."
+            valor={descricao}
+            aoMudar={setDescricao}
+            multilinha
+            limiteCaracteres={LIMITE_DESCRICAO}
+          />
+
+          <BotaoPrimario texto={salvando ? "Aguarde..." : "Salvar ocorrência"} aoPressionar={salvarOcorrencia} />
+          <BotaoPrimario
+            texto="Excluir ocorrência selecionada"
+            variante="claro"
+            aoPressionar={solicitarExclusao}
+          />
+        </>
+      )}
 
       {mensagem ? (
         <Text
@@ -251,7 +341,8 @@ export default function DiarioOcorrencias() {
       ))}
 
       <Text style={estilos.textoApoio}>
-        Protótipo acadêmico: os relatos ficam apenas nesta tela e não são salvos ao fechar o aplicativo.
+        Protótipo acadêmico: use apenas dados fictícios. Os relatos são salvos no servidor do projeto e não ficam
+        guardados neste aparelho.
       </Text>
 
       <ModalConfirmacao
