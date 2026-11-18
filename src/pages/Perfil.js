@@ -1,58 +1,118 @@
-
-import { useState } from "react";
-import { Pressable, Switch } from "react-native";
-import { StyleSheet, TextInput, Text, View } from "react-native";
-import { ScrollView } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import ModalConfirmacao from "../components/ModalConfirmacao";
-import { perfilFicticio } from "../dados/dadosFicticios";
+import { consultarPerfil } from "../services/perfil.js";
 import cores from "../tema/cores";
 
-
-
 export default function Perfil() {
-
   const [nome, setNome] = useState("");
-  const [telefone, setTelefone] = useState(perfilFicticio.telefone_emergencia);
-  const [modoDisfarce, setModoDisfarce] = useState(perfilFicticio.modo_disfarce);
-  const [notificacoes, setNotificacoes] = useState(perfilFicticio.notificacoes);
-  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
-  const [perfilEncerrado, setPerfilEncerrado] = useState(false);
+  const [telefone, setTelefone] = useState("");
+  const [modoDisfarce, setModoDisfarce] = useState(true);
+  const [notificacoes, setNotificacoes] = useState(false);
+  const [tema, setTema] = useState("Claro");
+  const [carregando, setCarregando] = useState(true);
+  const [mensagemErro, setMensagemErro] = useState("");
+  const [tentativa, setTentativa] = useState(0);
 
-  function excluirPerfil() {
-    // Encerra apenas esta tela de demonstração; não existe exclusão em servidor.
-    setNome("");
-    setTelefone("");
-    setModoDisfarce(false);
-    setNotificacoes(false);
-    setConfirmandoExclusao(false);
-    setPerfilEncerrado(true);
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarPerfil() {
+      setCarregando(true);
+      setMensagemErro("");
+
+      try {
+        const perfil = await consultarPerfil();
+
+        if (!ativo) return;
+
+        setNome(perfil.nome ?? "");
+        setTelefone(perfil.telefone_emergencia ?? "");
+        setModoDisfarce(perfil.modo_disfarce);
+        setNotificacoes(perfil.notificacoes);
+        setTema(perfil.tema);
+      } catch (erro) {
+        if (!ativo) return;
+
+        setMensagemErro(
+          erro.status === 401
+            ? "Entre na sua conta em Configurações → Minha conta."
+            : erro.message || "Não foi possível carregar o perfil."
+        );
+      } finally {
+        if (ativo) {
+          setCarregando(false);
+        }
+      }
+    }
+
+    carregarPerfil();
+
+    return () => {
+      ativo = false;
+    };
+  }, [tentativa]);
+
+  if (carregando) {
+    return (
+      <ScrollView
+        style={estilos.container}
+        contentContainerStyle={estilos.conteudo}
+      >
+        <Text style={estilos.textoApoio}>Carregando perfil...</Text>
+      </ScrollView>
+    );
   }
 
-  if (perfilEncerrado) {
+  if (mensagemErro) {
     return (
-      <ScrollView style={estilos.container} contentContainerStyle={estilos.conteudo}>
-        <Text style={estilos.subtitulo}>Perfil encerrado</Text>
-        <Text style={estilos.textoApoio}>
-          O perfil foi encerrado nesta demonstração. Nenhuma conta real foi excluída.
-        </Text>
+      <ScrollView
+        style={estilos.container}
+        contentContainerStyle={estilos.conteudo}
+      >
+        <Text style={estilos.textoApoio}>{mensagemErro}</Text>
+
+        <Pressable
+          style={estilos.botaoSalvar}
+          onPress={() => setTentativa((valor) => valor + 1)}
+        >
+          <Text style={estilos.textoBotaoSalvar}>
+            Tentar novamente
+          </Text>
+        </Pressable>
       </ScrollView>
     );
   }
 
   return (
-    <ScrollView style={estilos.container} contentContainerStyle={estilos.conteudo}>
+    <ScrollView
+      style={estilos.container}
+      contentContainerStyle={estilos.conteudo}
+    >
       <View style={estilos.avatar}>
-        <Ionicons name="person-outline" size={36} color={cores.primaria} />
+        <Ionicons
+          name="person-outline"
+          size={36}
+          color={cores.primaria}
+        />
       </View>
 
-      <View >
+      <View>
         <Text style={estilos.rotulo}>Nome (opcional)</Text>
         <TextInput
           style={estilos.input}
           placeholder="Seu nome ou apelido"
           value={nome}
           onChangeText={setNome}
+          maxLength={100}
         />
       </View>
 
@@ -63,16 +123,19 @@ export default function Perfil() {
           placeholder="(00) 00000-0000"
           value={telefone}
           onChangeText={setTelefone}
+          keyboardType="phone-pad"
         />
       </View>
 
       <View style={estilos.cardOpcao}>
-
         <View style={estilos.linhaOpcao}>
           <View>
             <Text style={estilos.tituloOpcao}>Modo disfarce</Text>
-            <Text style={estilos.descricaoOpcao}>Abrir sempre no calendário</Text>
+            <Text style={estilos.descricaoOpcao}>
+              Abrir sempre no calendário
+            </Text>
           </View>
+
           <Switch
             value={modoDisfarce}
             onValueChange={setModoDisfarce}
@@ -83,46 +146,52 @@ export default function Perfil() {
         <View style={estilos.linhaOpcao}>
           <View>
             <Text style={estilos.tituloOpcao}>Tema</Text>
-            <Text style={estilos.descricaoOpcao}>{perfilFicticio.tema}</Text>
+            <Text style={estilos.descricaoOpcao}>{tema}</Text>
           </View>
         </View>
 
         <View style={estilos.linhaOpcao}>
           <View>
             <Text style={estilos.tituloOpcao}>Notificação</Text>
-            <Text style={estilos.descricaoOpcao}>Lembretes de período e ciclo</Text>
+            <Text style={estilos.descricaoOpcao}>
+              Lembretes de período e ciclo
+            </Text>
           </View>
+
           <Switch
             value={notificacoes}
             onValueChange={setNotificacoes}
             trackColor={{ true: cores.primaria }}
           />
         </View>
-
       </View>
 
-      <Text style={estilos.subtitulo}>Modo disfarce e preferências</Text>
-      <Text style={estilos.textoApoio}>
-        Abra sempre no calendário. Destinatária do alerta simulado: Ana.
+      <Text style={estilos.subtitulo}>
+        Modo disfarce e preferências
       </Text>
 
-      <Pressable style={estilos.botaoSalvar}>
-        <Text style={estilos.textoBotaoSalvar}>Salvar</Text>
+      <Text style={estilos.textoApoio}>
+        As preferências abaixo pertencem à sua conta.
+        Alterações ainda não serão salvas nesta etapa.
+      </Text>
+
+      <Pressable
+        style={[estilos.botaoSalvar, estilos.botaoDesativado]}
+        disabled
+      >
+        <Text style={estilos.textoBotaoSalvar}>
+          Salvar — em integração
+        </Text>
       </Pressable>
 
-      <Pressable style={estilos.botaoExcluir} onPress={() => setConfirmandoExclusao(true)}>
-        <Text style={estilos.textoBotaoExcluir}>Excluir perfil</Text>
+      <Pressable
+        style={[estilos.botaoExcluir, estilos.botaoDesativado]}
+        disabled
+      >
+        <Text style={estilos.textoBotaoExcluir}>
+          Excluir perfil — em integração
+        </Text>
       </Pressable>
-
-      <ModalConfirmacao
-        visivel={confirmandoExclusao}
-        titulo="Excluir perfil?"
-        mensagem="O perfil será encerrado nesta demonstração."
-        textoConfirmar="Confirmar exclusão"
-        aoConfirmar={excluirPerfil}
-        aoCancelar={() => setConfirmandoExclusao(false)}
-      />
-
     </ScrollView>
   );
 }
@@ -224,5 +293,9 @@ const estilos = StyleSheet.create({
   textoBotaoExcluir: {
     color: cores.primaria,
     fontWeight: "bold",
+  },
+
+  botaoDesativado: {
+    opacity: 0.5,
   },
 });

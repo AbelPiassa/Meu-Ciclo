@@ -22,8 +22,14 @@ export default function Configuracoes({ navigation }) {
           />
         }
       />
-    
-     
+
+      <CartaoLista
+        icone="person-outline"
+        titulo="Minha conta"
+        subtitulo="Entrar ou criar uma conta"
+        aoPressionar={() => navigation.navigate("Login")}
+      />
+
       <CartaoLista
         icone="information-circle-outline"
         titulo="Sobre"
