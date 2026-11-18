@@ -3,36 +3,87 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import { ZodError } from 'zod';
-import { createProfileSchema, profileSchema, credentialsSchema, idSchema, resources } from './validation.js';
-import { hashPassword, checkPassword, tokenHash, createSession } from './auth.js';
+import {
+  createProfileSchema,
+  profileSchema,
+  credentialsSchema,
+  idSchema,
+  resources,
+} from './validation.js';
+import {
+  hashPassword,
+  checkPassword,
+  tokenHash,
+  createSession,
+} from './auth.js';
 
 const profileColumns = 'id_perfil,usuario,nome,telefone_emergencia,modo_disfarce,notificacoes,tema';
 /** @param {Record<string, import('node:sqlite').SQLOutputValue>} row @param {string[]} booleans */
 function serialize(row, booleans) {
   const data = /** @type {Record<string, unknown>} */ ({ ...row });
-  for (const key of booleans) data[key] = Boolean(data[key]);
+  for (const key of booleans) {
+    data[key] = Boolean(data[key]);
+  }
   return data;
 }
 /** @param {Record<string, unknown>} data */
 function sqlValues(data) {
-  return Object.values(data).map(value => typeof value === 'boolean' ? Number(value) : /** @type {string | number} */ (value));
+  return Object.values(data).map(
+    value => typeof value === 'boolean'
+      ? Number(value)
+      : /** @type {string | number} */ (value)
+  );
 }
 /** @param {import('express').Response} res @param {number} status @param {string} code @param {string} message */
-function fail(res, status, code, message) { return res.status(status).json({ erro: { codigo: code, mensagem: message } }); }
+function fail(res, status, code, message) {
+  return res.status(status).json({
+    erro: { codigo: code, mensagem: message },
+  });
+}
 
 /** @param {import('node:sqlite').DatabaseSync} db @param {{corsOrigins?: string[]}} options */
 export function createApp(db, { corsOrigins = [] } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
-  app.use(cors({ origin: corsOrigins, methods: ['GET', 'POST', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization'] }));
-  app.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
-  app.use(rateLimit({ windowMs: 60000, limit: 300, standardHeaders: 'draft-8', legacyHeaders: false,
-    message: { erro: { codigo: 'LIMITE', mensagem: 'Aguarde antes de tentar novamente.' } } }));
+  app.use(cors({
+    origin: corsOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }));
+  app.use((_req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+  });
+  app.use(rateLimit({
+    windowMs: 60000,
+    limit: 300,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: {
+      erro: {
+        codigo: 'LIMITE',
+        mensagem: 'Aguarde antes de tentar novamente.',
+      },
+    },
+  }));
   app.use(express.json({ limit: '32kb' }));
-  app.get('/health', (_req, res) => { db.prepare('SELECT 1').get(); res.json({ status: 'ok' }); });
-  const authLimit = rateLimit({ windowMs: 15 * 60000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false,
-    message: { erro: { codigo: 'LIMITE', mensagem: 'Limite de autenticação; tente mais tarde.' } } });
+  app.get('/health', (_req, res) => {
+    db.prepare('SELECT 1').get();
+    res.json({ status: 'ok' });
+  });
+  const authLimit = rateLimit({
+    windowMs: 15 * 60000,
+    limit: 20,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: {
+      erro: {
+        codigo: 'LIMITE',
+        mensagem: 'Limite de autenticação; tente mais tarde.',
+      },
+    },
+  });
 
   app.post('/api/perfis', authLimit, async (req, res) => {
     const { usuario, senha, ...data } = createProfileSchema.parse(req.body);
@@ -48,7 +99,10 @@ export function createApp(db, { corsOrigins = [] } = {}) {
       const perfil = serialize(db.prepare(`SELECT ${profileColumns} FROM perfis WHERE id_perfil = ?`).get(id), ['modo_disfarce', 'notificacoes']);
       db.exec('COMMIT');
       res.status(201).location(`/api/perfis/${id}`).json({ perfil, ...session });
-    } catch (error) { db.exec('ROLLBACK'); throw error; }
+    } catch (error) {
+      db.exec('ROLLBACK');
+      throw error;
+    }
   });
   app.post('/api/sessoes', authLimit, async (req, res) => {
     const { usuario, senha } = credentialsSchema.parse(req.body);
@@ -65,7 +119,8 @@ export function createApp(db, { corsOrigins = [] } = {}) {
     const hash = tokenHash(match[1]);
     const session = db.prepare('SELECT id_perfil FROM sessoes WHERE token_hash = ? AND expira_em > ?').get(hash, Date.now());
     if (!session) return fail(res, 401, 'SESSAO', 'Sessão inválida ou expirada.');
-    res.locals.perfilId = Number(session.id_perfil); res.locals.tokenHash = hash;
+    res.locals.perfilId = Number(session.id_perfil);
+    res.locals.tokenHash = hash;
     next();
   });
   app.delete('/api/sessoes/atual', (_req, res) => {
@@ -112,7 +167,9 @@ export function createApp(db, { corsOrigins = [] } = {}) {
       const recordId = idSchema.parse(req.params.id);
       const row = db.prepare(`SELECT * FROM ${table} WHERE ${id} = ? AND id_perfil = ?`).get(recordId, res.locals.perfilId);
       if (!row) return fail(res, 404, 'NAO_ENCONTRADO', 'Registro não encontrado.');
-      res.locals.recordId = recordId; res.locals.row = row; next();
+      res.locals.recordId = recordId;
+      res.locals.row = row;
+      next();
     });
     router.get('/:id', (_req, res) => res.json(serialize(res.locals.row, booleans)));
     router.put('/:id', (req, res) => {
@@ -127,13 +184,40 @@ export function createApp(db, { corsOrigins = [] } = {}) {
     });
     app.use(`/api/${path}`, router);
   }
-  app.use((_req, res) => fail(res, 404, 'ROTA', 'Rota não encontrada.'));
+  app.use((_req, res) =>
+    fail(res, 404, 'ROTA', 'Rota não encontrada.')
+  );
   /** @type {import('express').ErrorRequestHandler} */
   const errors = (error, _req, res, _next) => {
-    if (error instanceof ZodError) return res.status(422).json({ erro: { codigo: 'VALIDACAO', mensagem: 'Revise os campos.', campos: error.issues.map(i => ({ campo: i.path.join('.'), mensagem: i.message })) } });
-    if (error.type === 'entity.parse.failed') return fail(res, 400, 'JSON', 'JSON inválido.');
-    if (error.type === 'entity.too.large') return fail(res, 413, 'TAMANHO', 'Corpo excede 32 KB.');
-    if (error.code === 'ERR_SQLITE_ERROR' && /UNIQUE constraint failed/.test(error.message)) return fail(res, 409, 'CONFLITO', 'Não foi possível criar o perfil com esse usuário.');
+    if (error instanceof ZodError) {
+      return res.status(422).json({
+        erro: {
+          codigo: 'VALIDACAO',
+          mensagem: 'Revise os campos.',
+          campos: error.issues.map(i => ({
+            campo: i.path.join('.'),
+            mensagem: i.message,
+          })),
+        },
+      });
+    }
+    if (error.type === 'entity.parse.failed') {
+      return fail(res, 400, 'JSON', 'JSON inválido.');
+    }
+    if (error.type === 'entity.too.large') {
+      return fail(res, 413, 'TAMANHO', 'Corpo excede 32 KB.');
+    }
+    if (
+      error.code === 'ERR_SQLITE_ERROR' &&
+      /UNIQUE constraint failed/.test(error.message)
+    ) {
+      return fail(
+        res,
+        409,
+        'CONFLITO',
+        'Não foi possível criar o perfil com esse usuário.'
+      );
+    }
     // Não enviar SQL, stack, senha, token ou relato ao cliente/log.
     return fail(res, 500, 'INTERNO', 'Não foi possível concluir a operação.');
   };
