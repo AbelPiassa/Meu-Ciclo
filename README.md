@@ -55,3 +55,7 @@ API Express com SQLite persistente e quatro CRUDs disponível em [backend](backe
 Requer Node 24.x; consulte o [contrato REST](backend/docs/API.md) antes de integrar as telas.
 Esta etapa ainda não integra o aplicativo à API. Validação do grupo e testes de dispositivo
 permanecem pendentes. [Divisão confirmada](backend/docs/RESPONSABILIDADES.md).
+
+
+### Cliente compartilhado e Perfil — Entrega 4
+Configuração, sessão única para todos os CRUDs, dependência dos PRs e evidências: [Guia de integração](docs/INTEGRACAO_SESSAO.md). Teste isolado com API real: `node --test tests/perfil-integracao.test.mjs` (requer dependências do backend). Validação manual dos novos botões ainda pendente.
