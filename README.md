@@ -48,3 +48,10 @@ Aplicativo Meu Ciclo+ em desenvolvimento, utilizando React Native e Expo.
 - Ampliar a análise exploratória.
 - Desenvolver e avaliar o primeiro modelo de Data Science.
 - Continuar a integração entre aplicativo e API.
+
+## Backend — primeira implementação da Entrega 4
+
+API Express com SQLite persistente e quatro CRUDs disponível em [backend](backend/README.md).
+Requer Node 24.x; consulte o [contrato REST](backend/docs/API.md) antes de integrar as telas.
+Esta etapa ainda não integra o aplicativo à API. Validação do grupo e testes de dispositivo
+permanecem pendentes. [Divisão confirmada](backend/docs/RESPONSABILIDADES.md).
