@@ -47,6 +47,24 @@ export default function Login({ navigation }) {
 
   return (
     <TelaComRolagem>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Voltar à tela anterior"
+        disabled={carregando}
+        onPress={() => {
+          if (enviando.current) return;
+          setSenha("");
+          setMensagemErro("");
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          } else {
+            navigation.replace("Fachada");
+          }
+        }}
+        style={estilos.voltar}
+      >
+        <Text style={estilos.textoVoltar}>← Voltar</Text>
+      </Pressable>
       <View style={estilos.cabecalho}>
         <Text style={estilos.nome}>Meu Ciclo</Text>
         <Text style={estilos.slogan}>Seu ciclo, no seu ritmo.</Text>
@@ -96,6 +114,16 @@ export default function Login({ navigation }) {
 }
 
 const estilos = StyleSheet.create({
+  voltar: {
+    alignSelf: "flex-start",
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  textoVoltar: {
+    color: cores.primaria,
+    fontSize: 16,
+  },
   cabecalho: {
     alignItems: "center",
     gap: 8,

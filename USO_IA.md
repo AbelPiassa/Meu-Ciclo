@@ -96,3 +96,7 @@ Evidências e limitações: `backend/docs/VALIDACAO.md`.
 
 ## 18/11/2026 — Revisão assistida do PR #8
 ChatGPT/Codex revisou PRs #6/#7/#8 a pedido de Abel: “revisar pontos do Lucca, implementar correções, atualizar PR #8, preservar telas dos colegas e não fazer merge”. Implementou Salvar/Excluir Perfil, confirmação com cascata explícita, sessão observável, indicação de conta conectada e encerramento no Quick Exit. Documentou adaptação de Rede de Apoio sem modificar a branch do colega. Executou testes no ambiente do assistente, separados dos testes anteriores acompanhados no computador de Abel. Resultados, limites e roteiro manual em docs/INTEGRACAO_SESSAO.md. Nenhum merge; validação visual do novo código ainda pendente.
+
+
+### 18/11/2026 — Retorno nas telas de autenticação
+Após Abel identificar ausência de retorno no Login, o assistente adicionou botão Voltar em Login e Cadastro, preservando React Navigation existente. Usa histórico quando disponível e Fachada como alternativa; limpa campos de senha ao voltar. O botão aguarda o término de envio para evitar autenticação tardia após retorno. Análise JSX/lint dos dois arquivos e lint/typecheck backend aprovados; teste visual no computador de Abel ainda pendente. Não houve merge.
