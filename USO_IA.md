@@ -234,3 +234,19 @@ Os comandos foram executados localmente pelo integrante, com orientação do Cha
   limite de 15 s do cliente compartilhado não foi exercitado; a API ainda aceita data futura.
 - **Revisão:** pendente (Matheus e Abel). Nenhum arquivo dos outros integrantes foi alterado,
   nenhum merge foi feito e Data Science foi preservado (o novo modelo será alinhado com Lucca e Abel).
+
+## 18/11/2026 — Correção final após revisão MAX do PR #9
+
+**Responsável:** Matheus Albertini (M-Albertini). **Ferramenta:** Manus. Revisão humana final pendente.
+
+O pedido foi tratar o feedback da Correção 2 sem refazer implementações aprovadas. O assistente partiu de 8c0417e, preservou a referência `backup/pr9-8c0417e-20261119`, incorporou a master por merge real e resolveu individualmente conflitos em USO_IA.md, documentação de integração, README de Data Science e CSV bruto (diferença apenas de finais de linha). Preservou todos os registros anteriores de Abel, Kauê e Lucca e restaurou o README do backend. App.js, backend, sessão/cliente compartilhados, Perfil, Ciclos/Calendário e Rede de Apoio ficaram iguais à master.
+
+O Diário recebeu controlador com tickets exclusivos por operação, leitura deduplicada e exclusão mútua leitura/escrita. Rede/timeout/5xx em gravação bloqueiam novas escritas até GET bem-sucedido; GET falho não libera o bloqueio. Não há retry automático. Campos e ações são bloqueados durante operações. No blur, conteúdo sensível é desmontado, mas a operação permanece no controlador da sessão; no refoco, aguarda a escrita e recarrega. A lista atualizada substitui o objeto selecionado, evitando PUT com metadados antigos.
+
+O modelo antigo de série temporal e seus resultados foram preservados na referência histórica e bundle, mas retirados do diff. Toda a pasta data-science corresponde à master; a EDA do PR #12 permanece intacta. Não houve execução/auditoria do PR #13 nem implementação da interface do indicador; são entregas separadas coordenadas com Lucca e Abel.
+
+**Resultados executados no assistente, Linux/Node 24.22.3, dados fictícios:** npm test 82/82, test:diario 62/62, test:equipe 20/20, backend 9/9, lint/typecheck backend aprovados e Expo Web compilado. Houve 11/11 cenários de renderização em harness auxiliar React 19.3.1 com dublês nativos, separados das suites npm e da validação com React 19.2.3 instalada no aplicativo.
+
+No Expo Web final: CRUD, cancelamento/exclusão, POST persistido com resposta perdida produzindo um único registro, bloqueio até recuperação da lista, GET falho mantendo bloqueio, isolamento A/B, Quick Exit com GET/POST/PUT/DELETE atrasados e blur/goBack sem liberar a escrita pendente. A instrumentação inicial com callbacks antigos foi corrigida e os cenários relevantes repetidos com os handlers atuais. Resultados não atribuídos ao computador do integrante.
+
+**Limitações:** sem Android/iOS/aparelho físico; protótipo sem garantia de segurança de produção ou execução exatamente uma vez. Uma escrita já enviada pode concluir após logout. O timeout do cliente compartilhado não abrange integralmente corpo lento; achado documentado para alinhamento com Abel, sem modificar silenciosamente sua infraestrutura. Datas futuras permanecem pendência do backend. Nenhum merge do PR na master foi feito.

@@ -51,6 +51,28 @@ test("descarta a resposta de outra conta", () => {
   assert.equal(guarda(), false);
 });
 
+test("logout é recusado mesmo com tela ativa e geração inalterada", () => {
+  const { estado, guarda } = cenario();
+  estado.sessaoAtual = null;
+  assert.equal(estado.ativa, true);
+  assert.equal(estado.geracao, 3);
+  assert.equal(guarda(), false);
+});
+
+test("relogin na mesma conta é recusado sem depender da geração", () => {
+  const { estado, guarda } = cenario();
+  estado.sessaoAtual = { token: "b".repeat(64), id_perfil: 7 };
+  assert.equal(estado.geracao, 3);
+  assert.equal(guarda(), false);
+});
+
+test("outra conta é recusada sem depender da geração", () => {
+  const { estado, guarda } = cenario();
+  estado.sessaoAtual = { token: "c".repeat(64), id_perfil: 9 };
+  assert.equal(estado.geracao, 3);
+  assert.equal(guarda(), false);
+});
+
 test("nunca aceita quando não há sessão", () => {
   const guarda = criarGuardaDeResposta({
     sessao: null,

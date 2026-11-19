@@ -226,3 +226,40 @@ test("a próxima requisição já usa o token da sessão nova", async () => {
   assert.equal(chamadas[0].opcoes.headers.Authorization, `Bearer ${TOKEN}`);
   assert.equal(chamadas[1].opcoes.headers.Authorization, `Bearer ${TOKEN_NOVO}`);
 });
+
+const registroFicticio = {
+  id_ocorrencia: 8, id_perfil: PERFIL, data_ocorrencia: "2026-11-01",
+  tipo_ocorrencia: "Relato fictício", descricao_relato: "Apenas teste",
+  como_se_sentiu: "", nivel_perigo: "Não informado", acionou_policia: false,
+};
+const operacoesPendentes = {
+  GET: () => diario.listarOcorrencias(),
+  POST: () => diario.criarOcorrencia({ data: "01/11/2026", descricao: "Apenas teste" }),
+  PUT: () => diario.atualizarOcorrencia({ ...registroFicticio, data_ocorrencia: "01/11/2026" }, { data: "01/11/2026", descricao: "Apenas teste" }),
+  DELETE: () => diario.excluirOcorrencia(8),
+};
+for (const [metodo, executar] of Object.entries(operacoesPendentes)) {
+  test(`${metodo} atrasado após logout não entrega dados nem reabre a sessão`, async () => {
+    entrar();
+    const espera = pendente();
+    responder = (url) => url.endsWith("/api/sessoes/atual") ? resposta(204) : espera.promessa;
+    const resultado = executar().then(() => null, (e) => e);
+    encerrarSessao();
+    espera.liberar(metodo === "DELETE" ? resposta(204) : resposta(metodo === "POST" ? 201 : 200, metodo === "GET" ? [registroFicticio] : registroFicticio));
+    assert.equal((await resultado)?.status, 401);
+    assert.equal(obterSessao(), null);
+    assert.equal(chamadas.filter((c) => !c.url.includes("sessoes")).length, 1);
+  });
+  test(`${metodo} 401 antigo não apaga a sessão nova da mesma conta`, async () => {
+    entrar();
+    const espera = pendente();
+    responder = () => espera.promessa;
+    const resultado = executar().then(() => null, (e) => e);
+    entrar(TOKEN_NOVO, PERFIL);
+    const novaSessao = obterSessao();
+    espera.liberar(resposta(401, { erro: { codigo: "SESSAO", mensagem: "Sessão anterior expirada." } }));
+    assert.equal((await resultado)?.status, 401);
+    assert.equal(obterSessao(), novaSessao);
+    assert.equal(novaSessao.token, TOKEN_NOVO);
+  });
+}

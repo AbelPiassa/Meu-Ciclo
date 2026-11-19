@@ -69,3 +69,11 @@ Expo Web com duas contas fictícias: CRUD, painel sem sessão, novo login na mes
 durante requisição em andamento, isolamento entre contas e falha de rede na gravação. Não houve
 teste em emulador ou aparelho físico. Nenhum arquivo de outro integrante foi alterado e não houve
 merge do PR. Detalhes em `docs/entrega-4/diario-ocorrencias.md`.
+
+## Ajustes finais do Diário após Correção 2 — 18/11/2026
+
+O Diário mantém o contrato de sessão/cliente do Abel. O controlador `src/utils/controleDiario.js` acrescenta tickets de operação e bloqueio persistente de resultado incerto de escrita (rede/timeout/5xx) até GET bem-sucedido. Há exclusão mútua de leitura/escrita; recuperação de 404 é coordenada após a escrita. No blur, `useIsFocused()` desmonta dados/formulário/modal, mas preserva o controlador da sessão e sua escrita pendente. Controles locais desabilitados não alteram os componentes dos demais CRUDs.
+
+Testes finais: npm test 82/82, Diário 62/62, equipe 20/20, backend 9/9, lint/typecheck e build web aprovados. Renderização auxiliar e validação instrumentada no Expo Web estão separadas das suites em `docs/entrega-4/diario-ocorrencias.md`.
+
+Achado para alinhar com Abel: o timeout atual de `api.js` termina nos cabeçalhos; um corpo JSON incompleto pode manter a requisição pendente e atrasar o tratamento de 401. Não houve alteração do cliente compartilhado nem da API. Não confundir sucesso dos testes com segurança de produção. O modelo antigo saiu do escopo do PR #9, preservado em referência histórica; reprodução do PR #13 e interface do indicador são entregas posteriores.

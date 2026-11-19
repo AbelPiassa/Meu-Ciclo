@@ -1,120 +1,66 @@
-# Entrega 4 — Diário de Ocorrências integrado à API
+# Diário de Ocorrências — revisão final do PR #9
 
-Revisão final do PR #9 sobre a `master` com os PRs #6 (backend), #8 (cliente compartilhado e
-Perfil), #11 (Ciclos) e #7 (Rede de Apoio). O Diário usa a infraestrutura compartilhada do
-aplicativo: uma única sessão, um único cliente HTTP e o login principal.
+A correção parte do commit publicado `8c0417e` (Correção 2). A master foi incorporada por merge real, sem reescrever os commits compartilhados. O objetivo é manter o PR restrito ao Diário e preservar as implementações de Backend/Perfil, Ciclos/Calendário e Rede de Apoio.
 
-## O que mudou nesta revisão
+## Sessão, requisições e recuperação
 
-- **Branch atualizada com a `master`** (`feat/diario-api`), com os conflitos resolvidos em
-  `USO_IA.md` (todas as contribuições preservadas, inclusive a entrada do Diário/Data Science) e
-  `docs/INTEGRACAO_SESSAO.md` (versão da master).
-- **Identidade da sessão, não `id_perfil`.** O serviço captura o objeto de `obterSessao()` antes da
-  requisição e recusa a resposta se a sessão tiver mudado (`"Sessão alterada"`, 401). Entrar de novo
-  na mesma conta cria outro token e invalida a resposta anterior.
-- **Nada da sessão anterior é renderizado.** Cada sessão monta um Diário novo
-  (`key={obterVersaoSessao()}`): lista, formulário, mensagens e modal de confirmação nascem vazios,
-  inclusive ao entrar novamente na mesma conta.
-- **Travas presas à sessão responsável.** `gravacao.current` guarda a sessão dona da escrita e só
-  ela libera a trava; `carga.current` guarda a sessão da listagem em andamento.
-- **Uma listagem por vez.** Um segundo pedido reaproveita a requisição em andamento (sem
-  recarregamentos simultâneos).
-- **Escrita bloqueada enquanto a lista carrega** e quando a última listagem falhou.
-- **Falha de rede na gravação** mostra: "Não foi possível confirmar a gravação. Consulte a lista
-  (Atualizar) antes de tentar de novo." e exibe o botão **Atualizar lista**.
-- **`EXPO_PUBLIC_API_URL` sem `/api`** (ex.: `http://127.0.0.1:3000`).
+O Diário utiliza exclusivamente `src/services/sessao.js` e `src/services/api.js`. `EXPO_PUBLIC_API_URL` não contém `/api` (exemplo: `http://127.0.0.1:3000`). O login é o principal do aplicativo. A identidade comparada é o objeto retornado por `obterSessao()`, não somente `id_perfil`.
 
-## Arquivos do Diário
+`src/utils/controleDiario.js` mantém as travas por ticket exclusivo de operação. Duas leituras em andamento compartilham a mesma promessa. Não se permite GET manual durante escrita nem escrita durante GET. Cliques rápidos não iniciam uma segunda gravação.
 
-| Arquivo | Papel |
-| --- | --- |
-| `src/pages/DiarioOcorrencias.js` | tela: painel sem conta, lista, formulário, exclusão com confirmação, canais de ajuda |
-| `src/services/ocorrencias.js` | CRUD `/api/ocorrencias`, conversão de datas, corpo completo do PUT, checagem de sessão |
-| `src/utils/datasApi.js` | DD/MM/AAAA ↔ AAAA-MM-DD e `hojeIso` (data local) |
-| `src/utils/validacaoOcorrencia.js` | validação do formulário (obrigatórios, data real, não futura, ≥1900, ≤5000) |
-| `src/utils/mensagensApi.js` | tradução das mensagens de campo da API |
-| `src/utils/guardaResposta.js` | guarda por identidade da sessão + geração da tela |
-| `testes/apoio/{ambiente,servidorApi}.js` | apoio: URL de teste e API real em porta livre com banco temporário |
-| `testes/servicos/{ocorrencias,guarda-resposta,datas-validacao,diario-integracao}.test.js` | testes |
+Rede, timeout ou HTTP 5xx durante gravação tornam o resultado incerto. Novas escritas permanecem bloqueadas até uma leitura bem-sucedida; GET falho não libera a escrita. Não há retry automático de POST, PUT ou DELETE. A mensagem informa que a escrita já enviada pode ter concluído no servidor. Após a recuperação, o formulário é limpo para exigir conferência da lista antes de uma nova tentativa.
 
-Nenhum arquivo dos outros integrantes foi alterado: Login, Cadastro, Perfil, Configurações,
-Ciclos, Calendário, Histórico, Rede de Apoio, `src/servicos/contatosApi.js` (Lucca) e `backend/`
-seguem como na `master`.
+401 invalida a sessão compartilhada; resultados de sessões antigas não são entregues. 404 na escrita coordena a recarga somente depois de liberar a trava da escrita. 422 permite correção dos dados. O PUT continua completo e preserva campos não editados pela tela; uma atualização da lista reconcilia o objeto selecionado pelo ID, sem reutilizar metadados antigos.
 
-## Regras implementadas
+## Foco e interface
 
-- **Perfil:** `id_perfil` vem sempre da sessão. A API rejeita (422) outro perfil e oculta (404)
-  registros alheios.
-- **Validação no app:** data e descrição obrigatórias; data real em DD/MM/AAAA; não futura nem
-  anterior a 1900; descrição até 5000 caracteres. Nada é enviado quando o formulário é inválido.
-- **PUT:** a API zera campos opcionais omitidos, então o app envia o objeto completo, preservando
-  tipo, "como se sentiu", nível de perigo e acionou_policia.
-- **Erros:** 401 (encerra a sessão), 404 (recarrega a lista), 422 (mensagens de campo traduzidas),
-  5xx e falha de rede (mensagem sem sucesso falso; na gravação, orienta conferir a lista).
-- **Segurança:** token só em memória; relatos só no estado da tela; canais de ajuda (180/190)
-  disponíveis sem sessão.
+A tela usa `useIsFocused()`. Ao perder foco, o conteúdo sensível (lista, formulário, mensagens e modal) é desmontado, mesmo se NativeStack mantiver a tela montada. O controlador da mesma sessão permanece vivo: o blur não libera uma escrita pendente. No refoco, a tela aguarda a escrita, se existir, e consulta novamente a lista.
 
-## Como rodar a demonstração
+Campos são não editáveis e botões ficam desabilitados conforme carga, escrita, confirmação ou resultado incerto. Os controles são locais ao Diário; os componentes compartilhados dos demais CRUDs não foram modificados. Logout, Quick Exit e relogin na mesma conta descartam o conteúdo da sessão anterior.
 
-```bash
-# 1) API (Node 24) — na raiz do repositório
-npm ci --prefix backend
-HOST=0.0.0.0 CORS_ORIGINS=http://127.0.0.1:8081 npm start --prefix backend
+## Arquivos existentes
 
-# 2) perfil fictício
-curl -X POST http://127.0.0.1:3000/api/perfis -H 'Content-Type: application/json' \
-  -d '{"usuario":"demo.ficticia","senha":"Apenas-demonstracao-123!","nome":"Fictícia","telefone_emergencia":"00000000000"}'
+A tela é `src/pages/DiarioOcorrencias.js`. O serviço é `src/services/ocorrencias.js`. Os utilitários são `controleDiario.js`, `guardaResposta.js`, `datasApi.js`, `mensagensApi.js` e `validacaoOcorrencia.js` em `src/utils/`.
 
-# 3) app — EXPO_PUBLIC_API_URL sem /api
-EXPO_PUBLIC_API_URL=http://127.0.0.1:3000 npm run web
-#    Área protegida > Diário de Ocorrências (mesma conta do Login do app)
-```
+Os apoios estão em `testes/apoio/ambiente.js` e `servidorApi.js`. Os cinco arquivos de testes do Diário estão em `testes/servicos/`: `controle-diario`, `guarda-resposta`, `ocorrencias`, `datas-validacao` e `diario-integracao`, todos com sufixo `.test.js`. O `src/servicos/contatosApi.js` da Rede de Apoio continua preservado e usa a sessão compartilhada; apenas os antigos módulos independentes do Diário foram retirados anteriormente.
 
-Emulador Android: `http://10.0.2.2:3000`. Celular físico: `http://IP_DO_PC:3000` com
-`HOST=0.0.0.0`. Reiniciar o Expo após mudar a variável. No Expo Web o backend precisa de
-`CORS_ORIGINS` com a origem do Expo (ex.: `http://127.0.0.1:8081`), senão o navegador bloqueia as
-chamadas.
+## Data Science e autoria
 
-## Testes executados (18/11/2026)
+Toda a pasta `data-science/` foi alinhada byte a byte com a master. A EDA nacional e por UF do PR #12 foi preservada. O modelo antigo de série temporal, seus notebooks/resultados e proposta de endpoint ficaram na referência histórica `backup/pr9-8c0417e-20261119`, também preservada em bundle. Não fazem parte do diff final do PR #9.
 
-Ambiente do assistente: Linux, Node 24.22.3, backend com `npm ci`.
+O PR #13 é a frente oficial de Machine Learning de Lucca. A reprodução independente por Albertini ainda não foi executada nesta correção. A nova interface do indicador depende de alinhamento com Abel e de outra entrega; não foi implementada neste PR.
 
-| Comando | Resultado |
-| --- | --- |
-| `npm test` | **58/58** (38 do Diário + 20 da equipe) |
-| `npm run test:diario` | **38/38** (27 unitários + 11 de integração com a API real) |
-| `npm run test:equipe` | **20/20** (Ciclos, Rede de Apoio, Perfil, telefone) |
-| `npm test --prefix backend` | **9/9** |
-| `npm run lint --prefix backend` / `npm run typecheck --prefix backend` | sem erros |
+Todos os registros anteriores de `USO_IA.md` foram preservados, incluindo Abel, Kauê e Lucca. A documentação do backend retirada no commit publicado foi restaurada da master.
 
-## Validação no Expo Web (manual, dados fictícios)
+## Testes executados em 18/11/2026
 
-Duas contas fictícias (`diario.alfa`, `diario.beta`), API real em `127.0.0.1:3000` e SQLite
-temporário:
+Linux do assistente, Node 24.22.3, dados fictícios:
 
-- **CRUD:** cadastro, edição (lista e formulário atualizados com "Ocorrência atualizada."),
-  exclusão com modal ("Ocorrência excluída.") e cancelamento do modal preservando o relato.
-- **Sem sessão:** o Diário mostra o painel "Entre na sua conta para ver seu diário" (sem lista,
-  formulário ou modal) e os canais de ajuda continuam visíveis; o botão leva ao Login principal.
-- **Novo login na mesma conta:** a tela volta vazia, carrega só os relatos do servidor e o
-  formulário não guarda nada da sessão anterior.
-- **Quick Exit durante requisição:** com o `POST` retido por um interceptador no navegador, o
-  botão ficou em "Aguarde...", o Quick Exit encerrou a sessão e a resposta liberada depois não
-  repôs nada nem reabriu a sessão.
-- **Isolamento:** a conta B viu a lista vazia enquanto a conta A tinha um relato; o SQLite
-  confirmou `id_perfil` correto em cada registro.
-- **Falha de rede na gravação:** com `fetch` rejeitando `POST/PUT/DELETE`, apareceu a mensagem
-  "Não foi possível confirmar a gravação. Consulte a lista (Atualizar) antes de tentar de novo." e
-  o botão **Atualizar lista**.
+- `npm test`: 82/82, zero pulados.
+- `npm run test:diario`: 62/62 (51 unitários/controlador e 11 com API/SQLite reais).
+- `npm run test:equipe`: 20/20; não equivalem a 20 testes com banco, conforme `testes/README.md`.
+- `npm test --prefix backend`: 9/9.
+- Lint e typecheck do backend aprovados.
+- `expo export --platform web --clear`: compilado.
 
-## Limitações
+As evidências de renderização React e navegador são registradas separadamente após sua execução; os testes npm não são testes de UI.
 
-- Não houve teste em emulador Android, iOS ou aparelho físico (só Expo Web).
-- As travas de carregamento/gravação e o descarte de resposta antiga na tela são lógica de React,
-  verificadas nesta validação manual e não por teste automatizado (o projeto não tem renderizador
-  de teste).
-- O tempo limite de 15 s do cliente compartilhado não foi exercitado (é interno de
-  `src/services/api.js`).
-- A API aceita data futura; a checagem existe só no app. Sugestão de validação no backend.
-- Data Science: notebook e resultados preservados; nenhuma projeção nova foi publicada. O novo
-  modelo será alinhado com Lucca e Abel.
+## Demonstração local
+
+Use Node 24, instale com `npm ci --prefix backend` e inicie a API. Para Expo Web, configure `CORS_ORIGINS` com a origem exata do navegador e `EXPO_PUBLIC_API_URL` sem `/api`. Reinicie/limpe o cache do Expo ao alterar a URL. Cadastre somente contas fictícias pelo login/cadastro principal e abra a área protegida pelo gatilho previsto no aplicativo.
+
+## Limitações mantidas
+
+Protótipo acadêmico, sem afirmação de segurança de produção. Não houve Android/iOS ou aparelho físico. Logout não garante cancelamento de escrita já enviada. Sem rede, a revogação remota pode falhar e a sessão remota durar até expirar.
+
+O cliente compartilhado encerra o timer ao receber cabeçalhos; leitura de JSON incompleta pode demorar além da janela e atrasar o tratamento de 401. Esse achado foi reproduzido com servidor HTTP efêmero e documentado para alinhamento com Abel; o cliente e o backend não foram modificados silenciosamente. Datas futuras são bloqueadas no Diário, mas a validação correspondente do backend permanece uma pendência de sua frente.
+
+Uma lista consultada logo após uma resposta perdida pode não provar que uma escrita muito atrasada terminou; sem idempotência no backend, o bloqueio e a conferência da lista reduzem duplicação, mas não garantem execução exatamente uma vez.
+
+## Evidências separadas de interface desta revisão
+
+O harness de renderização React executou 11/11 cenários com renderizador de teste e componentes nativos dublados: recuperação de escrita incerta, lista falha, 5xx, cliques duplicados, controles/formulário durante PUT, metadados atuais, blur/refoco, relogin, respostas antigas 200/401 e Quick Exit. O runtime do harness foi React 19.3.1; esta execução auxiliar não substitui os testes com o runtime instalado no aplicativo nem representa teste nativo.
+
+No build final do Expo Web, com Express/SQLite temporários e duas contas fictícias, as interações foram instrumentadas nos handlers React atuais e as respostas interceptadas para reproduzir atrasos/perdas. Foram confirmados CRUD completo, cancelamento preservando registro, POST concluído no servidor com resposta perdida gerando somente um cadastro, bloqueio de nova escrita, GET falho mantendo o bloqueio e GET bem-sucedido atualizando a lista e limpando o formulário.
+
+Quick Exit durante respostas reais retidas de GET 200, POST 201, PUT 200 e DELETE 204 manteve a sessão encerrada e não restaurou os relatos. A conta B não visualizou o relato da A. No blur real por navegação para Perfil e retorno por goBack, o conteúdo do Diário foi removido do DOM, a escrita pendente permaneceu travada, não houve GET concorrente e, depois da conclusão, ocorreu uma única recarga com formulário vazio. Os interceptadores foram removidos ao terminar.
