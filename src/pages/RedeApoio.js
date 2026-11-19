@@ -9,10 +9,26 @@ import CampoTexto from "../components/CampoTexto";
 import BotaoPrimario from "../components/BotaoPrimario";
 import ModalConfirmacao from "../components/ModalConfirmacao";
 import cores from "../tema/cores";
+import useSessao from "../hooks/useSessao";
+import { obterSessao, obterVersaoSessao } from "../services/sessao.js";
 import { formatarTelefone, telefoneValido } from "../utils/telefoneRedeApoio";
 import { listarContatos, criarContato, atualizarContato, excluirContato } from "../servicos/contatosApi";
 
 export default function RedeApoio() {
+  const sessao = useSessao();
+  if (!sessao) {
+    return (
+      <TelaComRolagem>
+        <Text style={estilos.titulo}>Meus contatos</Text>
+        <Text style={estilos.textoApoio}>Entre na sua conta para acessar a Rede de Apoio.</Text>
+      </TelaComRolagem>
+    );
+  }
+  // Uma nova sessão monta um formulário novo, sem dados da conta anterior.
+  return <ContatosDaSessao key={obterVersaoSessao()} sessao={sessao} />;
+}
+
+function ContatosDaSessao({ sessao }) {
   const [contatos, setContatos] = useState([]);
   const [selecionado, setSelecionado] = useState(null);
   const [nome, setNome] = useState("");
@@ -26,6 +42,10 @@ export default function RedeApoio() {
   const [falhouLista, setFalhouLista] = useState(false);
   const ativo = useRef(false);
   const versao = useRef(0);
+  const bloqueio = useRef(false);
+  const vigente = useCallback((inicio) => (
+    ativo.current && inicio === versao.current && obterSessao() === sessao
+  ), [sessao]);
 
   const limpar = useCallback(() => {
     setSelecionado(null);
@@ -41,32 +61,35 @@ export default function RedeApoio() {
     setFalhouLista(false);
     try {
       const lista = await listarContatos();
-      if (ativo.current && inicio === versao.current) {
+      if (vigente(inicio)) {
         setContatos(lista);
         setMensagem("");
         setErro(false);
       }
     } catch (falha) {
-      if (ativo.current && inicio === versao.current) {
+      if (vigente(inicio)) {
         setContatos([]);
         setMensagem(falha.message);
         setErro(true);
         setFalhouLista(true);
       }
     } finally {
-      if (ativo.current && inicio === versao.current) setCarregando(false);
+      if (vigente(inicio)) setCarregando(false);
     }
-  }, []);
+  }, [vigente]);
 
   // Ao sair desta tela, esconde a lista e limpa o formulário.
   useFocusEffect(useCallback(() => {
     ativo.current = true;
     versao.current += 1;
+    bloqueio.current = false;
+    setSalvando(false);
     setContatos([]);
     carregar();
     return () => {
       ativo.current = false;
       versao.current += 1;
+      bloqueio.current = false;
       setContatos([]);
       limpar();
       setMensagem("");
@@ -75,7 +98,7 @@ export default function RedeApoio() {
   }, [carregar, limpar]));
 
   function selecionar(contato) {
-    if (salvando) return;
+    if (bloqueio.current) return;
     setSelecionado(contato);
     setNome(contato.nome);
     setRelacionamento(contato.relacionamento);
@@ -83,9 +106,9 @@ export default function RedeApoio() {
     setMensagem("");
   }
 
-  // POST para criar; PUT para editar. Depois, GET para atualizar a lista.
+  // POST para criar; PUT para editar. Atualiza a lista apenas após confirmação da API.
   async function salvar() {
-    if (salvando || carregando) return;
+    if (bloqueio.current || carregando || falhouLista || !vigente(versao.current)) return;
     if (!nome.trim() || !relacionamento.trim() || !telefone.trim()) {
       setMensagem("Preencha nome, tipo de contato e telefone.");
       setErro(true);
@@ -102,15 +125,15 @@ export default function RedeApoio() {
       alerta_automatico: selecionado?.alerta_automatico ?? false,
       observacoes: selecionado?.observacoes ?? "",
     };
+    bloqueio.current = true;
     setSalvando(true);
     try {
       const resposta = selecionado
         ? await atualizarContato(selecionado.id_contato, dados)
         : await criarContato(dados);
-      const lista = await listarContatos();
-      if (!ativo.current || atual !== versao.current) return;
-      setContatos(lista);
-      const salvo = lista.find(item => item.id_contato === resposta.id_contato);
+      if (!vigente(atual)) return;
+      setContatos(lista => [resposta, ...lista.filter(item => item.id_contato !== resposta.id_contato)]);
+      const salvo = resposta;
       if (salvo) {
         setSelecionado(salvo);
         setNome(salvo.nome);
@@ -120,35 +143,38 @@ export default function RedeApoio() {
       setMensagem(selecionado ? "Contato atualizado." : "Contato cadastrado.");
       setErro(false);
     } catch (falha) {
-      if (ativo.current && atual === versao.current) {
-        setMensagem(falha.message);
+      if (vigente(atual)) {
+        setMensagem(falha.status ? falha.message : `${falha.message} Confira a lista antes de repetir.`);
         setErro(true);
+        if (!falha.status || falha.status >= 500) setFalhouLista(true);
       }
     } finally {
-      if (ativo.current && atual === versao.current) setSalvando(false);
+      if (vigente(atual)) { bloqueio.current = false; setSalvando(false); }
     }
   }
 
   // DELETE exige confirmação antes de chamar a API.
   async function remover() {
-    if (!selecionado || salvando) return;
+    if (!selecionado || bloqueio.current || carregando || falhouLista || !vigente(versao.current)) return;
     const atual = versao.current;
+    bloqueio.current = true;
     setSalvando(true);
     try {
       await excluirContato(selecionado.id_contato);
-      const lista = await listarContatos();
-      if (!ativo.current || atual !== versao.current) return;
-      setContatos(lista);
+      if (!vigente(atual)) return;
+      setContatos(lista => lista.filter(item => item.id_contato !== selecionado.id_contato));
       limpar();
       setMensagem("Contato excluído.");
       setErro(false);
     } catch (falha) {
-      if (ativo.current && atual === versao.current) {
-        setMensagem(falha.message);
+      if (vigente(atual)) {
+        setMensagem(falha.status ? falha.message : `${falha.message} Confira a lista antes de repetir.`);
         setErro(true);
+        if (!falha.status || falha.status >= 500) setFalhouLista(true);
       }
     } finally {
-      if (ativo.current && atual === versao.current) {
+      if (vigente(atual)) {
+        bloqueio.current = false;
         setSalvando(false);
         setConfirmando(false);
       }
@@ -163,7 +189,7 @@ export default function RedeApoio() {
           style={estilos.botaoMais}
           accessibilityRole="button"
           accessibilityLabel="Novo contato"
-          onPress={() => { limpar(); setMensagem(""); }}
+          onPress={() => { if (!bloqueio.current) { limpar(); setMensagem(""); } }}
         >
           <Ionicons name="add" size={22} color="#ffffff" />
         </Pressable>
@@ -189,7 +215,7 @@ export default function RedeApoio() {
         />
       ))}
       {falhouLista && !carregando && (
-        <BotaoPrimario texto="Tentar novamente" variante="claro" aoPressionar={carregar} />
+        <BotaoPrimario texto="Tentar novamente" variante="claro" aoPressionar={() => { limpar(); carregar(); }} />
       )}
 
       <Text style={estilos.subtitulo}>Adicionar ou editar contato</Text>
@@ -203,7 +229,7 @@ export default function RedeApoio() {
       />
       <BotaoPrimario texto={salvando ? "Salvando..." : "Salvar contato"} aoPressionar={salvar} />
       <BotaoPrimario texto="Excluir contato selecionado" variante="claro" aoPressionar={() => {
-        if (selecionado && !salvando) setConfirmando(true);
+        if (selecionado && !bloqueio.current && !carregando && !falhouLista) setConfirmando(true);
         else if (!selecionado) { setMensagem("Selecione um contato para excluir."); setErro(true); }
       }} />
 
