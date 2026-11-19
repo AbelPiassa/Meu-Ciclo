@@ -13,8 +13,7 @@ export default function MenuAreaProtegida({ navigation }) {
   const [confirmandoSaida, setConfirmandoSaida] = useState(false);
 
   function encerrarSessaoProtegida() {
-    // Evento local: não envia SMS nem notifica contatos reais.
-    console.info("Alerta simulado para o contato de demonstração. Nenhuma mensagem foi enviada.");
+    // Encerrar sessão nunca dispara SOS.
     setConfirmandoSaida(false);
     sairRapido();
   }
@@ -61,6 +60,13 @@ export default function MenuAreaProtegida({ navigation }) {
         aoPressionar={() => navigation.navigate("IndicadorSinan")}
       />
 
+      <CartaoLista
+        icone="alert-circle-outline"
+        titulo="SOS de demonstração"
+        subtitulo="Enviar alerta fictício à central acadêmica"
+        aoPressionar={() => navigation.navigate("SosDemo")}
+      />
+
       <BotaoPrimario texto="Sair rapidamente • sem alerta" variante="contorno" aoPressionar={sairRapido} />
       <BotaoPrimario
         texto="Encerrar sessão protegida"
@@ -75,7 +81,7 @@ export default function MenuAreaProtegida({ navigation }) {
       <ModalConfirmacao
         visivel={confirmandoSaida}
         titulo="Encerrar sessão protegida?"
-        mensagem="Ao confirmar, o alerta será simulado para o contato configurado e você voltará ao calendário."
+        mensagem="Você voltará ao calendário. Nenhum alerta será enviado."
         textoConfirmar="Confirmar saída"
         aoConfirmar={encerrarSessaoProtegida}
         aoCancelar={() => setConfirmandoSaida(false)}

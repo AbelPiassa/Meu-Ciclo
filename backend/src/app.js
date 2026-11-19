@@ -1,5 +1,6 @@
 import express from 'express';
 import { readFileSync } from 'node:fs';
+import { instalarPainel, instalarSos } from './sos.js';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
@@ -42,8 +43,8 @@ function fail(res, status, code, message) {
   });
 }
 
-/** @param {import('node:sqlite').DatabaseSync} db @param {{corsOrigins?: string[]}} options */
-export function createApp(db, { corsOrigins = [] } = {}) {
+/** @param {import('node:sqlite').DatabaseSync} db @param {{corsOrigins?: string[], painelToken?: string}} options */
+export function createApp(db, { corsOrigins = [], painelToken = '' } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
@@ -114,6 +115,7 @@ export function createApp(db, { corsOrigins = [] } = {}) {
     return res.json({ id_perfil: Number(row.id_perfil), ...createSession(db, Number(row.id_perfil)) });
   });
 
+  instalarPainel(app, db, painelToken);
   app.use('/api', (req, res, next) => {
     const match = /^Bearer ([a-f0-9]{64})$/.exec(req.get('Authorization') ?? '');
     if (!match) return fail(res, 401, 'SESSAO', 'Sessão necessária.');
@@ -124,6 +126,7 @@ export function createApp(db, { corsOrigins = [] } = {}) {
     res.locals.tokenHash = hash;
     next();
   });
+  instalarSos(app, db, painelToken);
   // Indicador acadêmico agregado, sem consultar dados individuais ou executar modelos.
   app.get('/api/indicadores/sinan', (_req, res) => {
     try {

@@ -13,7 +13,7 @@ export function openDatabase(path) {
 
   const version = Number(db.prepare('PRAGMA user_version').get()?.user_version);
 
-  if (version > 1) {
+  if (version > 2) {
     db.close();
     throw new Error('Banco tem versão mais recente que esta API.');
   }
@@ -23,6 +23,18 @@ export function openDatabase(path) {
 
     try {
       db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
+      db.exec('COMMIT');
+    } catch (error) {
+      db.exec('ROLLBACK');
+      db.close();
+      throw error;
+    }
+  }
+
+  if (version < 2) {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec(readFileSync(new URL('./migration-2.sql', import.meta.url), 'utf8'));
       db.exec('COMMIT');
     } catch (error) {
       db.exec('ROLLBACK');

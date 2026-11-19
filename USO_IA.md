@@ -279,3 +279,7 @@ A validação independente e a integração ao aplicativo serão realizadas nas 
 ## 19/11/2026 — Integração do indicador SINAN (Lucca)
 
 Ferramenta: ChatGPT. Auxílio na implementação do endpoint de leitura autenticado, serviço mobile, tela da área protegida e testes de integração. O resultado é lido do arquivo agregado existente; não utiliza dados pessoais e não apresenta previsão individual. Revisão e execução dos testes pelo grupo pendentes no momento da implementação.
+
+## 19/11/2026 — SOS e painel acadêmico (Lucca)
+
+Ferramenta: ChatGPT. Auxílio na implementação da migração SQLite v2, endpoint autenticado, painel web com credencial separada e polling, tela Expo de SOS com coordenadas simuladas ou localização consentida do próprio aparelho de teste, testes e documentação. O recurso é exclusivamente demonstrativo; nenhum serviço real é acionado. Testes e validação pelo integrante devem ser registrados após execução.
