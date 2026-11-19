@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import TelaComRolagem from "../components/TelaComRolagem";
 import CartaoLista from "../components/CartaoLista";
@@ -28,10 +28,19 @@ function duracaoDoCiclo(ciclo) {
 }
 
 export default function HistoricoCiclo({ route }) {
-  const { ciclos, logado, carregando, erro: erroCarga, recarregar, cadastrarCiclo, atualizarCiclo, excluirCiclo } =
-    useCiclos();
+  const {
+    ciclos,
+    chaveSessao,
+    logado,
+    carregando,
+    erro: erroCarga,
+    recarregar,
+    cadastrarCiclo,
+    atualizarCiclo,
+    excluirCiclo,
+  } = useCiclos();
 
-  const [idSelecionado, setIdSelecionado] = useState(ciclos[0]?.id_ciclo ?? null);
+  const [idSelecionado, setIdSelecionado] = useState(null);
   const [dataSugerida, setDataSugerida] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [duracao, setDuracao] = useState("5");
@@ -41,7 +50,49 @@ export default function HistoricoCiclo({ route }) {
   const [erro, setErro] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
+  // Refs síncronas: a trava contra clique duplo vale na hora (o estado só vale na próxima renderização)
+  // e a sessão da tela é comparada depois de cada await.
+  const travaRef = useRef(false);
+  const sessaoRef = useRef(chaveSessao);
+  sessaoRef.current = chaveSessao;
+
   const cicloSelecionado = ciclos.find((ciclo) => ciclo.id_ciclo === idSelecionado) ?? null;
+
+  // Assinatura do registro selecionado: o formulário só é preenchido de novo quando o registro
+  // muda de verdade, assim uma recarga da lista não apaga o que a pessoa está digitando.
+  const assinatura = cicloSelecionado
+    ? [
+        cicloSelecionado.id_ciclo,
+        cicloSelecionado.data_inicio,
+        cicloSelecionado.data_fim,
+        cicloSelecionado.fluxo,
+      ].join("|")
+    : null;
+
+  function limparFormulario(data = "") {
+    setDataInicio(data);
+    setDuracao("5");
+    setFluxo("Moderado");
+  }
+
+  // Logout, Quick Exit, erro 401 ou troca de perfil: limpa tudo que é da conta anterior.
+  useEffect(() => {
+    travaRef.current = false;
+    setSalvando(false);
+    setConfirmandoExclusao(false);
+    setIdSelecionado(null);
+    setDataSugerida("");
+    setMensagem("");
+    setErro(false);
+    limparFormulario();
+  }, [chaveSessao]);
+
+  // Se o registro selecionado deixou de existir (outra recarga, exclusão), volta para "novo registro".
+  useEffect(() => {
+    if (idSelecionado !== null && !carregando && cicloSelecionado === null) {
+      setIdSelecionado(null);
+    }
+  }, [idSelecionado, carregando, cicloSelecionado]);
 
   // Preenche o formulário quando o registro selecionado muda (ou limpa, se for um registro novo)
   useEffect(() => {
@@ -50,11 +101,9 @@ export default function HistoricoCiclo({ route }) {
       setDuracao(duracaoDoCiclo(cicloSelecionado));
       setFluxo(cicloSelecionado.fluxo);
     } else {
-      setDataInicio(dataSugerida);
-      setDuracao("5");
-      setFluxo("Moderado");
+      limparFormulario(dataSugerida);
     }
-  }, [idSelecionado, dataSugerida]);
+  }, [assinatura, dataSugerida]);
 
   // Quando o Calendário abre o Histórico por "Adicionar registro", começa um registro novo com a data do dia
   useEffect(() => {
@@ -83,6 +132,51 @@ export default function HistoricoCiclo({ route }) {
     avisar("", false);
     setDataSugerida("");
     setIdSelecionado(null);
+    limparFormulario();
+  }
+
+  // Escrita só com sessão, sem carregamento em andamento e sem outra operação rodando.
+  function podeEscrever() {
+    if (!logado) {
+      avisar("Entre na sua conta (Configurações → Minha conta) para salvar registros.", true);
+      return false;
+    }
+
+    if (carregando) {
+      avisar("Aguarde o carregamento dos registros.", true);
+      return false;
+    }
+
+    if (travaRef.current) {
+      return false;
+    }
+
+    return true;
+  }
+
+  // Roda a operação com a trava ligada e só mostra o resultado se a sessão ainda for a mesma.
+  async function executar(operacao, aoConcluir, textoFalha) {
+    const chave = sessaoRef.current;
+
+    travaRef.current = true;
+    setSalvando(true);
+
+    try {
+      const resultado = await operacao();
+
+      if (sessaoRef.current === chave) {
+        aoConcluir(resultado);
+      }
+    } catch (falha) {
+      if (sessaoRef.current === chave) {
+        avisar(falha.message || textoFalha, true);
+      }
+    } finally {
+      if (sessaoRef.current === chave) {
+        travaRef.current = false;
+        setSalvando(false);
+      }
+    }
   }
 
   function validarFormulario() {
@@ -115,8 +209,8 @@ export default function HistoricoCiclo({ route }) {
     return true;
   }
 
-  async function salvarRegistro() {
-    if (salvando || !validarFormulario()) {
+  function salvarRegistro() {
+    if (!podeEscrever() || !validarFormulario()) {
       return;
     }
 
@@ -126,21 +220,21 @@ export default function HistoricoCiclo({ route }) {
       fluxo,
     };
 
-    setSalvando(true);
-
-    try {
-      if (cicloSelecionado === null) {
-        const novo = await cadastrarCiclo(dados);
-        setIdSelecionado(novo.id_ciclo);
-        avisar("Registro cadastrado.", false);
-      } else {
-        await atualizarCiclo(cicloSelecionado.id_ciclo, dados);
-        avisar("Registro atualizado.", false);
-      }
-    } catch (falha) {
-      avisar(falha.message || "Não foi possível salvar o registro.", true);
-    } finally {
-      setSalvando(false);
+    if (cicloSelecionado === null) {
+      executar(
+        () => cadastrarCiclo(dados),
+        (novo) => {
+          setIdSelecionado(novo.id_ciclo);
+          avisar("Registro cadastrado.", false);
+        },
+        "Não foi possível salvar o registro."
+      );
+    } else {
+      executar(
+        () => atualizarCiclo(cicloSelecionado.id_ciclo, dados),
+        () => avisar("Registro atualizado.", false),
+        "Não foi possível salvar o registro."
+      );
     }
   }
 
@@ -150,28 +244,29 @@ export default function HistoricoCiclo({ route }) {
       return;
     }
 
-    setConfirmandoExclusao(true);
-  }
-
-  async function excluirRegistro() {
-    setConfirmandoExclusao(false);
-
-    if (cicloSelecionado === null) {
+    if (!podeEscrever()) {
       return;
     }
 
-    setSalvando(true);
+    setConfirmandoExclusao(true);
+  }
 
-    try {
-      await excluirCiclo(cicloSelecionado.id_ciclo);
-      setDataSugerida("");
-      setIdSelecionado(null);
-      avisar("Registro excluído.", false);
-    } catch (falha) {
-      avisar(falha.message || "Não foi possível excluir o registro.", true);
-    } finally {
-      setSalvando(false);
+  function excluirRegistro() {
+    setConfirmandoExclusao(false);
+
+    if (cicloSelecionado === null || !podeEscrever()) {
+      return;
     }
+
+    executar(
+      () => excluirCiclo(cicloSelecionado.id_ciclo),
+      () => {
+        setDataSugerida("");
+        setIdSelecionado(null);
+        avisar("Registro excluído.", false);
+      },
+      "Não foi possível excluir o registro."
+    );
   }
 
   return (

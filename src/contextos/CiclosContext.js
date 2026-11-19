@@ -10,19 +10,35 @@ import { textoParaData } from "../utils/datas";
 
 const CiclosContext = createContext(null);
 
+function erroDeEstado(mensagem, status) {
+  const erro = new Error(mensagem);
+
+  if (status) {
+    erro.status = status;
+  }
+
+  return erro;
+}
+
 // Guarda os ciclos menstruais para o Histórico e o Calendário compartilharem.
 // Os dados vêm da API (/api/ciclos) usando a sessão compartilhada; sem sessão, a lista fica vazia.
-// Ao sair da conta (logout, Quick Exit ou sessão expirada) a lista é apagada da memória.
+// Ao sair da conta (logout, Quick Exit, sessão expirada ou troca de perfil) a lista é apagada da memória,
+// e respostas de requisições feitas por uma sessão antiga são descartadas.
 export function CiclosProvider({ children }) {
   const sessao = useSessao();
+  const chaveSessao = sessao?.token ?? null;
   const [ciclos, setCiclos] = useState([]);
   const [carregando, setCarregando] = useState(false);
+  const [gravando, setGravando] = useState(false);
   const [erro, setErro] = useState("");
   const [ultimoSalvoId, setUltimoSalvoId] = useState(null);
-  const tokenAtual = useRef(null);
 
-  // Só aceita respostas da sessão que as pediu; resposta de sessão antiga é descartada.
-  tokenAtual.current = sessao?.token ?? null;
+  // Refs síncronas: valem na hora, sem esperar a próxima renderização.
+  const tokenAtual = useRef(null);
+  const carregandoRef = useRef(false);
+  const gravandoRef = useRef(false);
+
+  tokenAtual.current = chaveSessao;
 
   const recarregar = useCallback(async () => {
     const token = tokenAtual.current;
@@ -31,6 +47,7 @@ export function CiclosProvider({ children }) {
       return;
     }
 
+    carregandoRef.current = true;
     setCarregando(true);
     setErro("");
 
@@ -46,62 +63,98 @@ export function CiclosProvider({ children }) {
       }
     } finally {
       if (tokenAtual.current === token) {
+        carregandoRef.current = false;
         setCarregando(false);
       }
     }
   }, []);
 
+  // Qualquer mudança de sessão (entrar, sair, Quick Exit, 401, outra conta) zera tudo e recarrega.
   useEffect(() => {
     setCiclos([]);
     setUltimoSalvoId(null);
     setErro("");
+    carregandoRef.current = false;
+    gravandoRef.current = false;
     setCarregando(false);
+    setGravando(false);
 
-    if (sessao) {
+    if (chaveSessao) {
       recarregar();
     }
-  }, [sessao?.token, recarregar]);
+  }, [chaveSessao, recarregar]);
 
-  // As três operações devolvem uma Promise e lançam o erro da API, para a tela mostrar o aviso.
-  async function cadastrarCiclo(dados) {
+  // Executa uma escrita com as proteções comuns: exige sessão, recusa durante o carregamento,
+  // recusa uma segunda operação enquanto outra roda (trava síncrona) e só aplica o resultado
+  // se a sessão continuar a mesma.
+  async function escrever(operacao, aplicar) {
     const token = tokenAtual.current;
-    const novo = await criarCiclo(dados);
 
-    if (tokenAtual.current === token) {
-      setCiclos((listaAtual) => [...listaAtual, novo]);
-      setUltimoSalvoId(novo.id_ciclo);
+    if (!token) {
+      throw erroDeEstado("Entre na sua conta para continuar.", 401);
     }
 
-    return novo;
+    if (carregandoRef.current) {
+      throw erroDeEstado("Aguarde o carregamento dos registros.");
+    }
+
+    if (gravandoRef.current) {
+      throw erroDeEstado("Aguarde a operação em andamento.");
+    }
+
+    gravandoRef.current = true;
+    setGravando(true);
+
+    try {
+      const resultado = await operacao();
+
+      if (tokenAtual.current === token) {
+        aplicar(resultado);
+      }
+
+      return resultado;
+    } finally {
+      if (tokenAtual.current === token) {
+        gravandoRef.current = false;
+        setGravando(false);
+      }
+    }
   }
 
-  async function atualizarCiclo(id, dados) {
+  // As três operações devolvem uma Promise e lançam o erro, para a tela mostrar o aviso.
+  function cadastrarCiclo(dados) {
+    return escrever(
+      () => criarCiclo(dados),
+      (novo) => {
+        setCiclos((listaAtual) => [...listaAtual, novo]);
+        setUltimoSalvoId(novo.id_ciclo);
+      }
+    );
+  }
+
+  function atualizarCiclo(id, dados) {
     const atual = ciclos.find((ciclo) => ciclo.id_ciclo === id);
 
     if (!atual) {
-      return null;
+      return Promise.reject(erroDeEstado("Registro não encontrado. Atualize a lista."));
     }
 
-    const token = tokenAtual.current;
-    const atualizado = await atualizarCicloApi(id, { ...atual, ...dados });
-
-    if (tokenAtual.current === token) {
-      setCiclos((listaAtual) =>
-        listaAtual.map((ciclo) => (ciclo.id_ciclo === id ? atualizado : ciclo))
-      );
-      setUltimoSalvoId(id);
-    }
-
-    return atualizado;
+    return escrever(
+      () => atualizarCicloApi(id, { ...atual, ...dados }),
+      (atualizado) => {
+        setCiclos((listaAtual) =>
+          listaAtual.map((ciclo) => (ciclo.id_ciclo === id ? atualizado : ciclo))
+        );
+        setUltimoSalvoId(id);
+      }
+    );
   }
 
-  async function excluirCiclo(id) {
-    const token = tokenAtual.current;
-    await excluirCicloApi(id);
-
-    if (tokenAtual.current === token) {
-      setCiclos((listaAtual) => listaAtual.filter((ciclo) => ciclo.id_ciclo !== id));
-    }
+  function excluirCiclo(id) {
+    return escrever(
+      () => excluirCicloApi(id),
+      () => setCiclos((listaAtual) => listaAtual.filter((ciclo) => ciclo.id_ciclo !== id))
+    );
   }
 
   // Do mais recente para o mais antigo
@@ -115,8 +168,10 @@ export function CiclosProvider({ children }) {
 
   const valor = {
     ciclos: ciclosOrdenados,
-    logado: Boolean(sessao),
+    chaveSessao,
+    logado: Boolean(chaveSessao),
     carregando,
+    gravando,
     erro,
     ultimoSalvoId,
     recarregar,

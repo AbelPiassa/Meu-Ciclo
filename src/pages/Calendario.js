@@ -98,7 +98,14 @@ export default function Calendario({ navigation }) {
     new Date(hoje.getFullYear(), hoje.getMonth(), 1)
   );
   const [diaSelecionado, setDiaSelecionado] = useState(hoje);
-  const { ciclos, ultimoSalvoId, logado, carregando, erro, recarregar } = useCiclos();
+  const { ciclos, chaveSessao, ultimoSalvoId, logado, carregando, erro, recarregar } = useCiclos();
+
+  // Logout, Quick Exit, erro 401 ou troca de perfil: volta para o mês atual e limpa o dia selecionado.
+  useEffect(() => {
+    const agora = new Date();
+    setMesVisivel(new Date(agora.getFullYear(), agora.getMonth(), 1));
+    setDiaSelecionado(agora);
+  }, [chaveSessao]);
 
   const parametros = useMemo(() => calcularParametrosCiclo(ciclos), [ciclos]);
 
@@ -212,13 +219,13 @@ export default function Calendario({ navigation }) {
 
         <View style={estilos.legenda}>
           <ItemLegenda cor={cores.primaria} texto="Menstruação" />
-          <ItemLegenda cor={cores.primariaClara} texto="Período fértil" />
-          <ItemLegenda cor={cores.ovulacao} texto="Ovulação" />
+          <ItemLegenda cor={cores.primariaClara} texto="Fértil (estimativa)" />
+          <ItemLegenda cor={cores.ovulacao} texto="Ovulação (estimativa)" />
         </View>
       </View>
 
       <View style={estilos.cardProximo}>
-        <Text style={estilos.proximoTitulo}>Próximo período</Text>
+        <Text style={estilos.proximoTitulo}>Próximo período (estimativa)</Text>
         {parametros ? (
           <View style={estilos.proximoLinha}>
             <Text style={estilos.proximoTexto}>
@@ -231,6 +238,12 @@ export default function Calendario({ navigation }) {
           <Text style={estilos.proximoTexto}>Registre seu primeiro ciclo.</Text>
         )}
       </View>
+
+      <Text style={estilos.aviso}>
+        As previsões de menstruação, período fértil e ovulação são apenas estimativas calculadas
+        a partir dos seus registros. Não têm garantia clínica e não devem ser usadas como método
+        contraceptivo. Em caso de dúvida, procure um profissional de saúde.
+      </Text>
 
       <BotaoPrimario
         texto="Adicionar registro"
