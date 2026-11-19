@@ -36,3 +36,83 @@ Alternativa sem notebook: `python modelo/ml_sinan.py`. Os notebooks chamam o mes
 ## Limitações
 
 Dados públicos fornecidos pelo grupo, com consistência/reprodução confirmadas; nova conferência direta no portal e licença específica pendentes. SINAN: notificações de violência interpessoal/autoprovocada, sexo feminino, todas as idades; UF de notificação, não necessariamente residência/ocorrência. Não são vítimas únicas, incidência, prevalência ou risco individual. Subnotificação, mudanças de cobertura/registro e ausência de população denominadora limitam inferências. 27 UFs e 10 anos não sustentam alegações de generalização ampla. Não usar informações do diário, perfil ou contatos. Não substituir avaliação profissional, policial ou jurídica.
+
+## Resultados da execução local — Lucca — 18/11/2026
+
+Ambiente: Windows, Python 3.13.13, scikit-learn 1.9.1, Pandas 3.1.1 e NumPy 2.5.5.
+
+Os dois notebooks foram executados integralmente pelo Jupyter. Os seis testes automatizados foram aprovados.
+
+### Classificação
+
+O Random Forest foi selecionado pelo maior F1 macro agregado na validação cruzada temporal (0,5625).
+
+Resultados no teste reservado de 2024:
+
+- Acurácia: 48,15%.
+- Precisão macro: 42,35%.
+- Recall macro: 41,45%.
+- F1 macro: 41,67%.
+- Acurácia balanceada: 41,45%.
+- Matriz de confusão: [[2, 6], [8, 11]].
+
+O modelo não atingiu os critérios mínimos de desempenho preditivo. Nenhuma previsão deverá ser disponibilizada no aplicativo.
+
+### Clusterização
+
+O K-Means selecionou dois grupos, respeitando o critério mínimo de três UFs por agrupamento.
+
+- Grupo 1: 22 UFs.
+- Grupo 2: 5 UFs.
+- Silhouette: 0,3607.
+- Davies-Bouldin: 0,9843.
+- ARI médio: 0,6263.
+- ARI percentil 10: -0,0562.
+- ARI temporal: 0,3402.
+
+Os agrupamentos possuem caráter exploratório e estabilidade limitada.
+s
+### Integração
+
+O arquivo saidas/indicador_agregado.json será disponibilizado para integração acadêmica ao aplicativo pelo Abel e Albertini, apresentando exclusivamente os padrões históricos agregados e suas limitações.
+
+Não foram utilizados dados pessoais das usuárias. Os resultados não representam classificação de risco individual, incidência de violência ou recomendação de atendimento.
+
+A reprodução independente pelo Albertini e a integração ao aplicativo permanecem pendentes.
+
+## Resultados da execução local — Lucca — 18/11/2026
+
+Ambiente: Windows, Python 3.13.13, scikit-learn 1.9.1, Pandas 3.1.1 e NumPy 2.5.5.
+
+Os dois notebooks foram executados integralmente pelo Jupyter e os seis testes automatizados foram aprovados.
+
+### Classificação — Random Forest
+
+- F1 macro na validação cruzada: 56,25%.
+- Acurácia no teste reservado: 48,15%.
+- Precisão macro: 42,35%.
+- Recall macro: 41,45%.
+- F1 macro: 41,67%.
+- Acurácia balanceada: 41,45%.
+- Matriz de confusão: [[2, 6], [8, 11]].
+
+O modelo não atingiu os critérios mínimos de desempenho preditivo. Nenhuma previsão deverá ser disponibilizada no aplicativo.
+
+### Clusterização — K-Means
+
+- Grupo 1: 22 UFs.
+- Grupo 2: 5 UFs.
+- Silhouette: 0,3607.
+- Davies-Bouldin: 0,9843.
+- ARI médio: 0,6263.
+- ARI temporal: 0,3402.
+
+Os agrupamentos possuem caráter exploratório e estabilidade limitada.
+
+### Integração
+
+O arquivo `saidas/indicador_agregado.json` será utilizado exclusivamente para integração acadêmica dos padrões históricos agregados.
+
+Nenhum dado pessoal das usuárias foi utilizado. Os modelos não representam risco individual ou recomendação de atendimento.
+
+A reprodução independente pelo Albertini e a integração com a API e o aplicativo permanecem pendentes.
