@@ -275,3 +275,7 @@ O modelo supervisionado não atingiu os critérios mínimos de desempenho predit
 Nenhuma previsão de risco individual será disponibilizada.
 
 A validação independente e a integração ao aplicativo serão realizadas nas próximas etapas.
+
+## 19/11/2026 — Integração do indicador SINAN (Lucca)
+
+Ferramenta: ChatGPT. Auxílio na implementação do endpoint de leitura autenticado, serviço mobile, tela da área protegida e testes de integração. O resultado é lido do arquivo agregado existente; não utiliza dados pessoais e não apresenta previsão individual. Revisão e execução dos testes pelo grupo pendentes no momento da implementação.

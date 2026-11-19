@@ -54,6 +54,13 @@ export default function MenuAreaProtegida({ navigation }) {
         aoPressionar={() => navigation.navigate("CanaisDeAjuda")}
       />
 
+      <CartaoLista
+        icone="stats-chart-outline"
+        titulo="Indicador acadêmico"
+        subtitulo="Padrões históricos de notificações (SINAN)"
+        aoPressionar={() => navigation.navigate("IndicadorSinan")}
+      />
+
       <BotaoPrimario texto="Sair rapidamente • sem alerta" variante="contorno" aoPressionar={sairRapido} />
       <BotaoPrimario
         texto="Encerrar sessão protegida"
