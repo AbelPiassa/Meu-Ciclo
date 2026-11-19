@@ -1,276 +1,257 @@
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useRef, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import TelaComRolagem from "../components/TelaComRolagem";
 import CartaoLista from "../components/CartaoLista";
 import CampoTexto from "../components/CampoTexto";
 import BotaoPrimario from "../components/BotaoPrimario";
-import { contatosApoioFicticios } from "../dados/dadosFicticios";
-import cores from "../tema/cores";
 import ModalConfirmacao from "../components/ModalConfirmacao";
+import cores from "../tema/cores";
+import useSessao from "../hooks/useSessao";
+import { obterSessao, obterVersaoSessao } from "../services/sessao.js";
+import { formatarTelefone, telefoneValido } from "../utils/telefoneRedeApoio";
+import { listarContatos, criarContato, atualizarContato, excluirContato } from "../servicos/contatosApi";
 
 export default function RedeApoio() {
-
-  const contatoInicial = contatosApoioFicticios[0];
-
-  const [contatoSelecionado, setContatoSelecionado] = useState(contatoInicial);
-  const [nome, setNome] = useState(contatoInicial.nome);
-  const [tipoContato, setTipoContato] = useState(contatoInicial.relacionamento);
-  const [telefone, setTelefone] = useState(contatoInicial.telefone);
-  const [contatos, setContatos] = useState(contatosApoioFicticios);
-  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
-
-  function selecionarContato(contato) {
-    setContatoSelecionado(contato);
-    setNome(contato.nome);
-    setTipoContato(contato.relacionamento);
-    setTelefone(contato.telefone);
+  const sessao = useSessao();
+  if (!sessao) {
+    return (
+      <TelaComRolagem>
+        <Text style={estilos.titulo}>Meus contatos</Text>
+        <Text style={estilos.textoApoio}>Entre na sua conta para acessar a Rede de Apoio.</Text>
+      </TelaComRolagem>
+    );
   }
+  // Uma nova sessão monta um formulário novo, sem dados da conta anterior.
+  return <ContatosDaSessao key={obterVersaoSessao()} sessao={sessao} />;
+}
 
+function ContatosDaSessao({ sessao }) {
+  const [contatos, setContatos] = useState([]);
+  const [selecionado, setSelecionado] = useState(null);
+  const [nome, setNome] = useState("");
+  const [relacionamento, setRelacionamento] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [carregando, setCarregando] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
+  const [mensagem, setMensagem] = useState("");
+  const [erro, setErro] = useState(false);
+  const [falhouLista, setFalhouLista] = useState(false);
+  const ativo = useRef(false);
+  const versao = useRef(0);
+  const bloqueio = useRef(false);
+  const vigente = useCallback((inicio) => (
+    ativo.current && inicio === versao.current && obterSessao() === sessao
+  ), [sessao]);
 
-  function novoContato() {
-    setContatoSelecionado(null);
+  const limpar = useCallback(() => {
+    setSelecionado(null);
     setNome("");
-    setTipoContato("");
+    setRelacionamento("");
     setTelefone("");
-  }
+  }, []);
 
-
-  function cadastrarContato() {
-
-    if (contatoSelecionado !== null) {
-      return;
+  // GET: carrega os contatos da API. Não usa mais dadosFicticios.js.
+  const carregar = useCallback(async () => {
+    const inicio = versao.current;
+    setCarregando(true);
+    setFalhouLista(false);
+    try {
+      const lista = await listarContatos();
+      if (vigente(inicio)) {
+        setContatos(lista);
+        setMensagem("");
+        setErro(false);
+      }
+    } catch (falha) {
+      if (vigente(inicio)) {
+        setContatos([]);
+        setMensagem(falha.message);
+        setErro(true);
+        setFalhouLista(true);
+      }
+    } finally {
+      if (vigente(inicio)) setCarregando(false);
     }
+  }, [vigente]);
 
-    // Evita cadastrar contatos com campos vazios.
-    if (!nome.trim() || !tipoContato.trim() || !telefone.trim()) {
-      return;
-    }
-
-    const contato = {
-      id_contato: Date.now(),
-      id_perfil: 1,
-      nome: nome.trim(),
-      relacionamento: tipoContato.trim(),
-      telefone: telefone.trim(),
-      alerta_automatico: false,
-      observacoes: "",
+  // Ao sair desta tela, esconde a lista e limpa o formulário.
+  useFocusEffect(useCallback(() => {
+    ativo.current = true;
+    versao.current += 1;
+    bloqueio.current = false;
+    setSalvando(false);
+    setContatos([]);
+    carregar();
+    return () => {
+      ativo.current = false;
+      versao.current += 1;
+      bloqueio.current = false;
+      setContatos([]);
+      limpar();
+      setMensagem("");
+      setConfirmando(false);
     };
+  }, [carregar, limpar]));
 
-    setContatos([...contatos, contato]);
-
-    selecionarContato(contato);
+  function selecionar(contato) {
+    if (bloqueio.current) return;
+    setSelecionado(contato);
+    setNome(contato.nome);
+    setRelacionamento(contato.relacionamento);
+    setTelefone(formatarTelefone(contato.telefone));
+    setMensagem("");
   }
 
-
-  function atualizarContato() {
-    if (contatoSelecionado === null) {
+  // POST para criar; PUT para editar. Atualiza a lista apenas após confirmação da API.
+  async function salvar() {
+    if (bloqueio.current || carregando || falhouLista || !vigente(versao.current)) return;
+    if (!nome.trim() || !relacionamento.trim() || !telefone.trim()) {
+      setMensagem("Preencha nome, tipo de contato e telefone.");
+      setErro(true);
       return;
     }
-
-    if (!nome.trim() || !tipoContato.trim() || !telefone.trim()) {
+    if (!telefoneValido(telefone)) {
+      setMensagem("Informe telefone com DDD e 10 ou 11 dígitos.");
+      setErro(true);
       return;
     }
-
-    const contatoAtualizado = {
-      ...contatoSelecionado,
-      nome: nome.trim(),
-      relacionamento: tipoContato.trim(),
-      telefone: telefone.trim(),
+    const atual = versao.current;
+    const dados = {
+      nome, relacionamento, telefone,
+      alerta_automatico: selecionado?.alerta_automatico ?? false,
+      observacoes: selecionado?.observacoes ?? "",
     };
-
-    setContatos(contatosAtuais =>
-      contatosAtuais.map(contato =>
-        contato.id_contato === contatoSelecionado.id_contato
-          ? contatoAtualizado
-          : contato
-      )
-    );
-
-    setContatoSelecionado(contatoAtualizado);
-  }
-
-
-  function formatarTelefone(valor) {
-    // Remove tudo que não for número e limita a 11 dígitos.
-    const numeros = valor.replace(/\D/g, "").slice(0, 11);
-
-    if (numeros.length === 0) {
-      return "";
-    }
-
-    // Enquanto a pessoa está digitando o DDD.
-    if (numeros.length <= 2) {
-      return `(${numeros}`;
-    }
-
-    const ddd = numeros.slice(0, 2);
-    const telefone = numeros.slice(2);
-
-    // Primeiros números depois do DDD.
-    if (telefone.length <= 4) {
-      return `(${ddd}) ${telefone}`;
-    }
-
-    // Telefone fixo: 10 dígitos com DDD.
-    if (numeros.length <= 10) {
-      return `(${ddd}) ${telefone.slice(0, 4)}-${telefone.slice(4)}`;
-    }
-
-    // Celular: 11 dígitos com DDD.
-    return `(${ddd}) ${telefone.slice(0, 5)}-${telefone.slice(5)}`;
-  }
-
-
-  function salvarContato() {
-    if (contatoSelecionado === null) {
-      cadastrarContato();
-    } else {
-      atualizarContato();
+    bloqueio.current = true;
+    setSalvando(true);
+    try {
+      const resposta = selecionado
+        ? await atualizarContato(selecionado.id_contato, dados)
+        : await criarContato(dados);
+      if (!vigente(atual)) return;
+      setContatos(lista => [resposta, ...lista.filter(item => item.id_contato !== resposta.id_contato)]);
+      const salvo = resposta;
+      if (salvo) {
+        setSelecionado(salvo);
+        setNome(salvo.nome);
+        setRelacionamento(salvo.relacionamento);
+        setTelefone(formatarTelefone(salvo.telefone));
+      }
+      setMensagem(selecionado ? "Contato atualizado." : "Contato cadastrado.");
+      setErro(false);
+    } catch (falha) {
+      if (vigente(atual)) {
+        setMensagem(falha.status ? falha.message : `${falha.message} Confira a lista antes de repetir.`);
+        setErro(true);
+        if (!falha.status || falha.status >= 500) setFalhouLista(true);
+      }
+    } finally {
+      if (vigente(atual)) { bloqueio.current = false; setSalvando(false); }
     }
   }
 
-
-  function solicitarExclusao() {
-    // Só permite excluir se houver um contato selecionado.
-    if (contatoSelecionado === null) {
-      return;
+  // DELETE exige confirmação antes de chamar a API.
+  async function remover() {
+    if (!selecionado || bloqueio.current || carregando || falhouLista || !vigente(versao.current)) return;
+    const atual = versao.current;
+    bloqueio.current = true;
+    setSalvando(true);
+    try {
+      await excluirContato(selecionado.id_contato);
+      if (!vigente(atual)) return;
+      setContatos(lista => lista.filter(item => item.id_contato !== selecionado.id_contato));
+      limpar();
+      setMensagem("Contato excluído.");
+      setErro(false);
+    } catch (falha) {
+      if (vigente(atual)) {
+        setMensagem(falha.status ? falha.message : `${falha.message} Confira a lista antes de repetir.`);
+        setErro(true);
+        if (!falha.status || falha.status >= 500) setFalhouLista(true);
+      }
+    } finally {
+      if (vigente(atual)) {
+        bloqueio.current = false;
+        setSalvando(false);
+        setConfirmando(false);
+      }
     }
-
-    setConfirmandoExclusao(true);
   }
-
-  function excluirContato() {
-    if (contatoSelecionado === null) {
-      return;
-    }
-
-    // Mantém todos os contatos, exceto o selecionado.
-    setContatos((listaAtual) =>
-      listaAtual.filter(
-        (contato) => contato.id_contato !== contatoSelecionado.id_contato
-      )
-    );
-
-    // Limpa o formulário e encerra a confirmação.
-    novoContato();
-    setConfirmandoExclusao(false);
-  }
-
-
 
   return (
     <TelaComRolagem>
       <View style={estilos.linhaTitulo}>
         <Text style={estilos.titulo}>Meus contatos</Text>
-        <Pressable style={estilos.botaoMais} onPress={novoContato}>
+        <Pressable
+          style={estilos.botaoMais}
+          accessibilityRole="button"
+          accessibilityLabel="Novo contato"
+          onPress={() => { if (!bloqueio.current) { limpar(); setMensagem(""); } }}
+        >
           <Ionicons name="add" size={22} color="#ffffff" />
         </Pressable>
       </View>
 
-      {contatos.map((contato) => (
-
+      {carregando && (
+        <View style={estilos.status}>
+          <ActivityIndicator color={cores.primaria} />
+          <Text style={estilos.textoApoio}>Carregando contatos...</Text>
+        </View>
+      )}
+      {!carregando && contatos.length === 0 && !falhouLista && (
+        <Text style={estilos.textoApoio}>Nenhum contato cadastrado.</Text>
+      )}
+      {!carregando && contatos.map(contato => (
         <CartaoLista
           key={contato.id_contato}
           icone="person-outline"
           titulo={contato.nome}
-          subtitulo={`${contato.relacionamento} • ${contato.telefone}`}
-          selecionado={contato.id_contato === contatoSelecionado?.id_contato}
-          aoPressionar={() => selecionarContato(contato)}
-          direita={
-            <View style={estilos.acoes}>
-              <Ionicons name="call-outline" size={20} color={cores.primaria} />
-              <Ionicons name="chatbubble-outline" size={20} color={cores.primaria} />
-            </View>
-          }
+          subtitulo={`${contato.relacionamento} • ${formatarTelefone(contato.telefone)}`}
+          selecionado={contato.id_contato === selecionado?.id_contato}
+          aoPressionar={() => selecionar(contato)}
         />
       ))}
+      {falhouLista && !carregando && (
+        <BotaoPrimario texto="Tentar novamente" variante="claro" aoPressionar={() => { limpar(); carregar(); }} />
+      )}
 
       <Text style={estilos.subtitulo}>Adicionar ou editar contato</Text>
-      <Text style={estilos.textoApoio}>Use o mesmo formulário para cadastrar ou alterar.</Text>
-
+      <Text style={estilos.textoApoio}>Demonstração acadêmica: utilize apenas dados fictícios.</Text>
+      <CampoTexto rotulo="Nome" placeholder="Ex.: Ana" valor={nome} aoMudar={setNome} />
+      <CampoTexto rotulo="Tipo de contato" placeholder="Ex.: Familiar" valor={relacionamento} aoMudar={setRelacionamento} />
       <CampoTexto
-        rotulo="Nome"
-        placeholder="Ex.: Ana"
-        valor={nome} aoMudar={setNome}
+        rotulo="Telefone" placeholder="(11) 99999-9999" valor={telefone}
+        aoMudar={valor => setTelefone(formatarTelefone(valor))}
+        teclado="phone-pad" limiteCaracteres={15}
       />
+      <BotaoPrimario texto={salvando ? "Salvando..." : "Salvar contato"} aoPressionar={salvar} />
+      <BotaoPrimario texto="Excluir contato selecionado" variante="claro" aoPressionar={() => {
+        if (selecionado && !bloqueio.current && !carregando && !falhouLista) setConfirmando(true);
+        else if (!selecionado) { setMensagem("Selecione um contato para excluir."); setErro(true); }
+      }} />
 
-      <CampoTexto
-        rotulo="Tipo de contato"
-        placeholder="Familiar"
-        valor={tipoContato}
-        aoMudar={setTipoContato}
-      />
-
-      <CampoTexto
-        rotulo="Telefone"
-        placeholder="(00) 00000-0000"
-        valor={telefone}
-        aoMudar={(texto) => setTelefone(formatarTelefone(texto))}
-      />
-
-      <BotaoPrimario
-        texto="Salvar contato"
-        aoPressionar={salvarContato}
-      />
-      <BotaoPrimario
-        texto="Excluir contato selecionado"
-        variante="claro"
-        aoPressionar={solicitarExclusao}
-      />
-
-
+      {Boolean(mensagem) && (
+        <Text accessibilityLiveRegion="polite" style={[estilos.textoApoio, erro && estilos.textoErro]}>{mensagem}</Text>
+      )}
       <ModalConfirmacao
-        visivel={confirmandoExclusao}
-        titulo="Excluir contato?"
-        mensagem="Este contato será removido da sua rede de apoio."
-        textoConfirmar="Confirmar exclusão"
-        aoConfirmar={excluirContato}
-        aoCancelar={() => setConfirmandoExclusao(false)}
+        visivel={confirmando} titulo="Excluir contato?"
+        mensagem="O contato selecionado será removido da Rede de Apoio."
+        textoConfirmar="Confirmar exclusão" aoConfirmar={remover}
+        aoCancelar={() => setConfirmando(false)}
       />
-
-
     </TelaComRolagem>
   );
 }
 
 const estilos = StyleSheet.create({
-  linhaTitulo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  titulo: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: cores.textoEscuro,
-  },
-
-  botaoMais: {
-    width: 44,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: cores.primaria,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  acoes: {
-    flexDirection: "row",
-    gap: 14,
-  },
-
-  subtitulo: {
-    fontSize: 17,
-    fontWeight: "bold",
-    color: cores.textoEscuro,
-    marginTop: 6,
-  },
-
-  textoApoio: {
-    fontSize: 12,
-    color: cores.textoSuave,
-  },
+  linhaTitulo: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  titulo: { fontSize: 22, fontWeight: "bold", color: cores.textoEscuro },
+  botaoMais: { width: 44, height: 36, borderRadius: 10, backgroundColor: cores.primaria, alignItems: "center", justifyContent: "center" },
+  status: { alignItems: "center", paddingVertical: 12, gap: 8 },
+  subtitulo: { fontSize: 17, fontWeight: "bold", color: cores.textoEscuro, marginTop: 6 },
+  textoApoio: { fontSize: 12, color: cores.textoSuave },
+  textoErro: { color: cores.perigo },
 });
