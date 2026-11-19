@@ -75,3 +75,28 @@ commits e pull request.
 ### Limitações
 A análise utiliza dados agregados por ano e não permite estimar
 o risco individual das usuárias.
+## Entregas 3 e 4 — Planejamento e primeira implementação do backend
+
+**Frente responsável:** Abel Piassa. **Ferramenta:** ChatGPT/Codex.
+
+- IA leu master e Trello, organizou prazos/checklists e registrou a divisão confirmada:
+  Matheus Albertini no Diário; Abel, Lucca e Matheus em Data Science.
+- Prompt de execução: “Agora precisamos iniciar o desenvolvimento pelas tarefas
+  prioritárias, sem alterar o código dos demais integrantes.”
+- IA implementou a primeira versão de backend Express/SQLite, sessões por perfil,
+  quatro CRUDs, contrato, validações e testes em branch separada.
+- IA executou os testes HTTP locais, lint e verificação de tipos do backend.
+- Abel/grupo ainda precisam revisar o código e o contrato, testar em seu ambiente e
+  integrar as telas. Não atribuímos a eles testes que foram executados pelo assistente.
+- Telas e notebook dos demais integrantes não foram alterados nesta implementação.
+- Foram utilizados apenas dados fictícios; não foi criado indicador de risco individual.
+
+Evidências e limitações: `backend/docs/VALIDACAO.md`.
+
+
+## 18/11/2026 — Revisão assistida do PR #8
+ChatGPT/Codex revisou PRs #6/#7/#8 a pedido de Abel: “revisar pontos do Lucca, implementar correções, atualizar PR #8, preservar telas dos colegas e não fazer merge”. Implementou Salvar/Excluir Perfil, confirmação com cascata explícita, sessão observável, indicação de conta conectada e encerramento no Quick Exit. Documentou adaptação de Rede de Apoio sem modificar a branch do colega. Executou testes no ambiente do assistente, separados dos testes anteriores acompanhados no computador de Abel. Resultados, limites e roteiro manual em docs/INTEGRACAO_SESSAO.md. Nenhum merge; validação visual do novo código ainda pendente.
+
+
+### 18/11/2026 — Retorno nas telas de autenticação
+Após Abel identificar ausência de retorno no Login, o assistente adicionou botão Voltar em Login e Cadastro, preservando React Navigation existente. Usa histórico quando disponível e Fachada como alternativa; limpa campos de senha ao voltar. O botão aguarda o término de envio para evitar autenticação tardia após retorno. Análise JSX/lint dos dois arquivos e lint/typecheck backend aprovados; teste visual no computador de Abel ainda pendente. Não houve merge.
