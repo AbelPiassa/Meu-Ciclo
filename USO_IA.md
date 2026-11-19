@@ -100,3 +100,7 @@ ChatGPT/Codex revisou PRs #6/#7/#8 a pedido de Abel: “revisar pontos do Lucca,
 
 ### 18/11/2026 — Retorno nas telas de autenticação
 Após Abel identificar ausência de retorno no Login, o assistente adicionou botão Voltar em Login e Cadastro, preservando React Navigation existente. Usa histórico quando disponível e Fachada como alternativa; limpa campos de senha ao voltar. O botão aguarda o término de envio para evitar autenticação tardia após retorno. Análise JSX/lint dos dois arquivos e lint/typecheck backend aprovados; teste visual no computador de Abel ainda pendente. Não houve merge.
+
+
+## 18/11/2026 — EDA por UF assistida
+A pedido de Abel, ChatGPT/Codex preservou a análise nacional e os arquivos enviados, revisou proveniência, completou verificações UF/ano e executou o notebook no ambiente do assistente. Não treinou modelo, não modificou telas e não realizou merge. Evidências em data-science/VALIDACAO.md; revisão humana e reprodução pelos colegas permanecem necessárias.

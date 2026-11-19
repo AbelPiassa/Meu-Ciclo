@@ -1,0 +1,76 @@
+[Ministério da Saúde](http://www.saude.gov.br/) ([image](https://tabnet.datasus.gov.br/cgi/imagem/principal_r1_c1_res.gif))
+
+[**Informações de Saúde**](https://tabnet.datasus.gov.br/tabnet/tabnet.htm "Informações de Saúde")
+
+**DATASUS**  Tecnologia da Informação a Serviço do SUS
+
+[**Ajuda**](https://tabnet.datasus.gov.br/tabnet/tabdescr.htm)
+
+DATASUS
+
+# VIOLÊNCIA INTERPESSOAL/AUTOPROVOCADA - Brasil
+
+**Freqüência por Ano da Notific segundo Região/UF de notificação**\
+**Sexo:** Feminino\
+**Período:** 2015-2024
+
+"Região/UF de notificação";"2015";"2016";"2017";"2018";"2019";"2020";"2021";"2022";"2023";"2024";"Total"
+"Região Norte";11014;12724;13218;14302;16949;17067;18643;21752;26697;26391;178757
+".. Rondônia";511;666;936;1009;1056;1014;992;1410;1862;1855;11311
+".. Acre";1261;1361;1744;1540;1428;1207;1573;1551;1728;1801;15194
+".. Amazonas";2619;2579;3228;3306;3906;2831;3580;4325;5697;6432;38503
+".. Roraima";483;590;772;929;1300;946;1083;1514;1850;1732;11199
+".. Pará";3895;4442;3249;3925;5651;8101;8542;9162;10635;9584;67186
+".. Amapá";208;292;445;526;626;346;538;749;823;778;5331
+".. Tocantins";2037;2794;2844;3067;2982;2622;2335;3041;4102;4209;30033
+"Região Nordeste";24719;25943;32207;39552;47022;37009;46988;56596;76399;83893;470328
+".. Maranhão";1817;1576;1623;2231;3060;2462;2942;3314;3639;4260;26924
+".. Piauí";1718;2390;2493;2681;3134;2066;3251;3258;3798;4785;29574
+".. Ceará";2152;2781;3453;5969;8833;7097;8474;12742;20281;20194;91976
+".. Rio Grande do Norte";1172;1354;1778;2167;2753;1929;2478;2851;3711;4016;24209
+".. Paraíba";1725;788;1946;2030;2852;2193;2530;3134;3786;4472;25456
+".. Pernambuco";7773;8326;10807;12660;14236;11410;14394;15463;18872;20227;134168
+".. Alagoas";1961;1893;2790;2954;3889;3098;3836;4456;6079;6974;37930
+".. Sergipe";758;546;699;911;1180;1353;1453;2187;2794;3424;15305
+".. Bahia";5643;6289;6618;7949;7085;5401;7630;9191;13439;15541;84786
+"Região Sudeste";79733;91184;116347;129662;141949;112622;132390;157821;209170;215483;1386361
+".. Minas Gerais";30560;28899;32574;34842;37571;27972;27156;32639;41754;41531;335498
+".. Espírito Santo";3680;4878;5571;7078;7819;5729;7195;10581;12719;15797;81047
+".. Rio de Janeiro";12175;14744;22861;25214;28464;23150;27515;33868;47260;50570;285821
+".. São Paulo";33318;42663;55341;62528;68095;55771;70524;80733;107437;107585;683995
+"Região Sul";32510;34313;44614;52405;62143;47184;48942;55693;73382;78043;529229
+".. Paraná";14073;15588;20291;23354;27194;22037;23116;26452;34241;37803;244149
+".. Santa Catarina";6716;6861;8366;9234;11338;9085;9751;11024;15447;16142;103964
+".. Rio Grande do Sul";11721;11864;15957;19817;23611;16062;16075;18217;23694;24098;181116
+"Região Centro-Oeste";11010;11735;14173;16747;21679;19190;21921;26275;34319;34018;211067
+".. Mato Grosso do Sul";4514;4616;5413;6028;7123;6048;5925;6238;8316;8728;62949
+".. Mato Grosso";1502;1612;1767;1895;2554;2274;2335;3449;4070;4257;25715
+".. Goiás";3576;3714;4249;5183;7108;6139;8384;9997;13315;12769;74434
+".. Distrito Federal";1418;1793;2744;3641;4894;4729;5277;6591;8618;8264;47969
+"Total";158986;175899;220559;252668;289742;233072;268884;318137;419967;437828;2775742
+
+Fonte: Ministério da Saúde/SVSA - Sistema de Informação de Agravos de Notificação - Sinan Net\
+\
+**Notas:**
+
+1. Períodos Disponíveis ou período - Correspondem aos anos de notificação dos casos.
+2. Dados referentes ao estado do Espírito Santo, a partir de dezembro de 2019, são oriundos do Sistema de Informação estadual e-SUS VS.
+3. Dados de 2009 a 2014 atualizados em 15/05/2018.
+4. Dados de 2015 e 2016 atualizados em 08/11/2018.
+5. Dados de 2017 atualizados em 17/04/2019.
+6. Dados de 2018 atualizados em 24/06/2020.
+7. Dados de 2019 atualizados em 18/03/2021.
+8. Dados de 2020 atualizados em 25/07/2022, correção em 30/04/2024.
+9. Dados de 2021 atualizados em 19/10/2023.
+10. Dados de 2022 atualizados em 01/11/2024.
+11. Dados de 2023 atualizados em 07/03/2025, correção em 12/01/2026.
+12. Dados de 2024 atualizados em 12/03/2026.
+13. Dados de 2025 atualizados em 22/07/2026, dados sujeitos à revisão.\
+    \
+    \* Dados disponibilizados no TABNET em outubro de 2026
+
+Legenda:
+
+| -      | - Dado numérico igual a 0 não resultante de arredondamento.                               |
+| ------ | ----------------------------------------------------------------------------------------- |
+| 0; 0,0 | - Dado numérico igual a 0 resultante de arredondamento de um dado originalmente positivo. |
