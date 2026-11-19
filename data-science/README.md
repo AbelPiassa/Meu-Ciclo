@@ -162,3 +162,16 @@ A execução completa recria o CSV tratado e mantém resultados e gráficos no n
 | Matheus Albertini | Reprodução independente, auditoria da validação e interface do indicador |
 
 Esta atualização conclui a extensão da EDA. Não inclui modelo treinado nem integração no aplicativo. Para as Entregas 3 e 4 ainda é preciso definir classificação e/ou agrupamento conforme o enunciado, executar e avaliar o modelo e integrar o indicador. Uma proposta de regressão exige confirmar adequação com o professor. Não há métricas preditivas a relatar nesta etapa. A validação deve considerar medidas repetidas por UF e ordem temporal; transformações do modelo devem ser ajustadas apenas no treino.
+
+
+## 10. Machine Learning — PR #13
+
+A implementação de classificação e clusterização foi concluída por Lucca.
+
+Consulte [MODELAGEM.md](MODELAGEM.md) para conhecer a metodologia, os comandos de reprodução, as métricas e as limitações.
+
+O modelo supervisionado não atingiu o critério mínimo de desempenho preditivo. O K-Means será utilizado exclusivamente para apresentar padrões históricos exploratórios.
+
+Arquivo destinado à integração: `saidas/indicador_agregado.json`.
+
+Pendências: reprodução independente pelo Albertini, integração via API pelo Abel e exibição do indicador no aplicativo.
