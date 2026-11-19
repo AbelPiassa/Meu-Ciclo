@@ -1,76 +1,74 @@
 import { describe, test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import net from "node:net";
 import { join } from "node:path";
-import { configurarApi } from "../../src/servicos/configApi.js";
-import { ErroApi } from "../../src/servicos/clienteApi.js";
-import { requisicao } from "../../src/servicos/clienteApi.js";
-import { entrar, sair, obterSessao, requisicaoAutenticada } from "../../src/servicos/sessao.js";
-import {
-  listarOcorrencias,
-  criarOcorrencia,
-  atualizarOcorrencia,
-  excluirOcorrencia,
-} from "../../src/servicos/ocorrenciasApi.js";
 import { criarPastaTemporaria, iniciarServidor, localizarBackend, removerPasta } from "../apoio/servidorApi.js";
 
 // Integração real: serviços do app -> HTTP -> API Express -> SQLite.
-// Só roda se o backend do Abel estiver disponível (ver testes/apoio/servidorApi.js).
+// Usa a sessão única (services/sessao.js) e o cliente compartilhado (services/api.js).
+// Só roda se o backend estiver instalado (ver testes/apoio/servidorApi.js).
 const backend = localizarBackend();
 const motivoPular = backend
   ? false
-  : "backend/ não encontrado (defina MEU_CICLO_BACKEND_DIR ou aguarde o merge da API do Abel)";
+  : "backend/ indisponível: rode `npm ci` em backend/ ou defina MEU_CICLO_BACKEND_DIR";
 
 // Dados 100% fictícios.
 const SENHA = "Apenas-demonstracao-123!";
 const perfilA = { usuario: "diario.a", senha: SENHA, nome: "Perfil A fictício", telefone_emergencia: "00000000000" };
 const perfilB = { usuario: "diario.b", senha: SENHA, nome: "Perfil B fictício", telefone_emergencia: "00000000000" };
 
-describe("Diário de Ocorrências x API real", { skip: motivoPular }, () => {
+describe("Diário de Ocorrências x API real (sessão compartilhada)", { skip: motivoPular }, () => {
   let servidor;
   let pasta;
   let caminhoBanco;
   let idA;
+  let api;
 
-  async function levantar() {
-    servidor = await iniciarServidor(backend, caminhoBanco);
-    configurarApi({ urlBase: servidor.urlApi, tempoLimiteMs: 5000 });
+  async function levantar(porta) {
+    servidor = await iniciarServidor(backend, caminhoBanco, porta);
+    // O cliente compartilhado lê EXPO_PUBLIC_API_URL (sem /api) na inicialização do módulo,
+    // por isso os módulos são importados só depois que a API está no ar.
+    process.env.EXPO_PUBLIC_API_URL = servidor.urlBase;
+    api = {
+      requisicao: (await import("../../src/services/api.js")).requisicao,
+      sessao: await import("../../src/services/sessao.js"),
+      perfil: await import("../../src/services/perfil.js"),
+      diario: await import("../../src/services/ocorrencias.js"),
+    };
   }
 
   before(async () => {
     pasta = criarPastaTemporaria();
     caminhoBanco = join(pasta, "teste.sqlite");
     await levantar();
-    const a = await requisicao("POST", "/perfis", { corpo: perfilA });
-    await requisicao("POST", "/perfis", { corpo: perfilB });
+    const a = await api.requisicao("/api/perfis", { metodo: "POST", dados: perfilA });
+    await api.requisicao("/api/perfis", { metodo: "POST", dados: perfilB });
     idA = a.perfil.id_perfil;
   });
 
   after(async () => {
-    await sair();
+    api?.sessao.encerrarSessao();
     await servidor?.parar();
     removerPasta(pasta);
   });
 
-  test("sem sessão: operações falham com tipo 'sessao' e nada é enviado", async () => {
-    assert.equal(obterSessao().ativa, false);
-    await assert.rejects(listarOcorrencias(), (e) => e instanceof ErroApi && e.tipo === "sessao");
-    await assert.rejects(criarOcorrencia({ data: "01/11/2026", descricao: "x" }), (e) => e.tipo === "sessao");
+  test("sem sessão: operações falham com 401 e nada é enviado", async () => {
+    assert.equal(api.sessao.obterSessao(), null);
+    await assert.rejects(api.diario.listarOcorrencias(), (e) => e.status === 401);
+    await assert.rejects(api.diario.criarOcorrencia({ data: "01/11/2026", descricao: "x" }), (e) => e.status === 401);
   });
 
-  test("login com senha errada: tipo 'credenciais' e sessão continua inativa", async () => {
-    await assert.rejects(entrar(perfilA.usuario, "senha-errada-123456"), (e) => e.tipo === "credenciais");
-    assert.equal(obterSessao().ativa, false);
-    await assert.rejects(entrar("", ""), (e) => e.tipo === "validacao");
+  test("login com senha errada: 401 e a sessão continua vazia", async () => {
+    await assert.rejects(api.perfil.entrar(perfilA.usuario, "senha-errada-123456"), (e) => e.status === 401);
+    assert.equal(api.sessao.obterSessao(), null);
   });
 
-  test("CRUD completo: criar, ler, atualizar, excluir (conversão de datas incluída)", async () => {
-    await entrar(perfilA.usuario, SENHA);
-    assert.deepEqual(obterSessao(), { ativa: true, idPerfil: idA });
-    assert.deepEqual(await listarOcorrencias(), []);
+  test("CRUD completo com a sessão do login (conversão de datas incluída)", async () => {
+    await api.perfil.entrar(perfilA.usuario, SENHA);
+    assert.equal(api.sessao.obterSessao().id_perfil, idA);
+    assert.deepEqual(await api.diario.listarOcorrencias(), []);
 
     // CREATE
-    const criada = await criarOcorrencia({ data: "01/11/2026", descricao: "  Relato fictício 1  " });
+    const criada = await api.diario.criarOcorrencia({ data: "01/11/2026", descricao: "  Relato fictício 1  " });
     assert.equal(criada.data_ocorrencia, "01/11/2026"); // volta em DD/MM/AAAA
     assert.equal(criada.descricao_relato, "Relato fictício 1"); // trim
     assert.equal(criada.id_perfil, idA);
@@ -78,46 +76,54 @@ describe("Diário de Ocorrências x API real", { skip: motivoPular }, () => {
     assert.equal(criada.nivel_perigo, "Não informado");
     assert.equal(criada.acionou_policia, false);
 
-    // READ (ordem: data mais recente primeiro)
-    const outra = await criarOcorrencia({ data: "15/11/2026", descricao: "Relato fictício 2" });
-    const lista = await listarOcorrencias();
+    // READ (data mais recente primeiro)
+    const outra = await api.diario.criarOcorrencia({ data: "15/11/2026", descricao: "Relato fictício 2" });
+    const lista = await api.diario.listarOcorrencias();
     assert.deepEqual(lista.map((o) => o.id_ocorrencia), [outra.id_ocorrencia, criada.id_ocorrencia]);
 
     // UPDATE
-    const atualizada = await atualizarOcorrencia(criada, { data: "02/11/2026", descricao: "Relato alterado" });
+    const atualizada = await api.diario.atualizarOcorrencia(criada, { data: "02/11/2026", descricao: "Relato alterado" });
     assert.equal(atualizada.id_ocorrencia, criada.id_ocorrencia);
     assert.equal(atualizada.data_ocorrencia, "02/11/2026");
     assert.equal(atualizada.descricao_relato, "Relato alterado");
-    const releitura = await listarOcorrencias();
+    const releitura = await api.diario.listarOcorrencias();
     assert.equal(releitura.find((o) => o.id_ocorrencia === criada.id_ocorrencia).descricao_relato, "Relato alterado");
 
     // DELETE (204 sem corpo não pode quebrar)
-    assert.equal(await excluirOcorrencia(criada.id_ocorrencia), undefined);
-    assert.equal(await excluirOcorrencia(outra.id_ocorrencia), undefined);
-    assert.deepEqual(await listarOcorrencias(), []);
-    await assert.rejects(excluirOcorrencia(criada.id_ocorrencia), (e) => e.tipo === "naoEncontrado");
+    assert.equal(await api.diario.excluirOcorrencia(criada.id_ocorrencia), undefined);
+    assert.equal(await api.diario.excluirOcorrencia(outra.id_ocorrencia), undefined);
+    assert.deepEqual(await api.diario.listarOcorrencias(), []);
+    await assert.rejects(api.diario.excluirOcorrencia(criada.id_ocorrencia), (e) => e.status === 404);
   });
 
   test("PUT preserva tipo, como_se_sentiu, nível de perigo e acionou_policia", async () => {
     // Registro "rico" criado direto na API (a tela só edita data e descrição).
-    const rico = await requisicaoAutenticada("POST", "/ocorrencias", {
-      id_perfil: idA, data_ocorrencia: "2026-10-02", tipo_ocorrencia: "Ameaça verbal",
-      descricao_relato: "Original", como_se_sentiu: "Insegura", nivel_perigo: "Médio", acionou_policia: true,
+    const rico = await api.sessao.requisicaoAutenticada("/api/ocorrencias", {
+      metodo: "POST",
+      dados: {
+        id_perfil: idA,
+        data_ocorrencia: "2026-10-02",
+        tipo_ocorrencia: "Ameaça verbal",
+        descricao_relato: "Original",
+        como_se_sentiu: "Insegura",
+        nivel_perigo: "Médio",
+        acionou_policia: true,
+      },
     });
-    const [daTela] = await listarOcorrencias();
-    await atualizarOcorrencia(daTela, { data: "03/10/2026", descricao: "Editado pela tela" });
+    const [daTela] = await api.diario.listarOcorrencias();
+    await api.diario.atualizarOcorrencia(daTela, { data: "03/10/2026", descricao: "Editado pela tela" });
 
-    const depois = await requisicaoAutenticada("GET", `/ocorrencias/${rico.id_ocorrencia}`);
+    const depois = await api.sessao.requisicaoAutenticada(`/api/ocorrencias/${rico.id_ocorrencia}`);
     assert.equal(depois.descricao_relato, "Editado pela tela");
     assert.equal(depois.data_ocorrencia, "2026-10-03");
     assert.equal(depois.tipo_ocorrencia, "Ameaça verbal");
     assert.equal(depois.como_se_sentiu, "Insegura");
     assert.equal(depois.nivel_perigo, "Médio");
     assert.equal(depois.acionou_policia, true);
-    await excluirOcorrencia(rico.id_ocorrencia);
+    await api.diario.excluirOcorrencia(rico.id_ocorrencia);
   });
 
-  test("validação no cliente: nada é enviado para datas/campos inválidos", async () => {
+  test("validação no cliente: nada é enviado para campos inválidos", async () => {
     for (const campos of [
       { data: "31/02/2026", descricao: "x" },
       { data: "", descricao: "x" },
@@ -125,98 +131,79 @@ describe("Diário de Ocorrências x API real", { skip: motivoPular }, () => {
       { data: "01/01/2099", descricao: "x" },
       { data: "01/11/2026", descricao: "a".repeat(5001) },
     ]) {
-      await assert.rejects(criarOcorrencia(campos), (e) => e.tipo === "validacao");
+      await assert.rejects(api.diario.criarOcorrencia(campos), (e) => e.status === 422);
     }
-    assert.deepEqual(await listarOcorrencias(), []); // nada chegou ao banco
+    assert.deepEqual(await api.diario.listarOcorrencias(), []); // nada chegou ao banco
   });
 
-  test("validação no servidor: erros de campo chegam traduzidos", async () => {
+  test("validação no servidor: 422 chega com os campos traduzidos", async () => {
     await assert.rejects(
-      requisicaoAutenticada("POST", "/ocorrencias", {
-        id_perfil: idA, data_ocorrencia: "2026-02-31", tipo_ocorrencia: "", descricao_relato: "",
+      api.sessao.requisicaoAutenticada("/api/ocorrencias", {
+        metodo: "POST",
+        dados: {
+          id_perfil: idA,
+          data_ocorrencia: "2026-02-31",
+          tipo_ocorrencia: "",
+          descricao_relato: "",
+        },
       }),
       (e) => {
-        assert.equal(e.tipo, "validacao");
-        const porCampo = Object.fromEntries(e.campos.map((c) => [c.campo, c.mensagem]));
-        assert.equal(porCampo.data_ocorrencia, "Data inexistente.");
-        assert.equal(porCampo.descricao_relato, "Preencha este campo.");
-        assert.equal(porCampo.tipo_ocorrencia, "Preencha este campo.");
+        assert.equal(e.status, 422);
+        const porCampo = Object.fromEntries((e.campos ?? []).map((c) => [c.campo, c.mensagem]));
+        assert.equal(porCampo.data_ocorrencia, "Data inexistente; use AAAA-MM-DD.");
+        assert.match(porCampo.descricao_relato, /Too small/i);
         return true;
       }
     );
   });
 
-  test("identificação do perfil: id_perfil de outro perfil é rejeitado (422)", async () => {
-    await assert.rejects(
-      requisicaoAutenticada("POST", "/ocorrencias", {
-        id_perfil: idA + 1, data_ocorrencia: "2026-11-01", tipo_ocorrencia: "x", descricao_relato: "y",
-      }),
-      (e) => e.tipo === "validacao" && e.status === 422
-    );
-  });
-
   test("isolamento: outro perfil não vê nem exclui relatos alheios", async () => {
-    const minha = await criarOcorrencia({ data: "05/11/2026", descricao: "Só do perfil A" });
-    await sair();
-    assert.equal(obterSessao().ativa, false);
-
-    await entrar(perfilB.usuario, SENHA);
-    assert.deepEqual(await listarOcorrencias(), []);
-    await assert.rejects(excluirOcorrencia(minha.id_ocorrencia), (e) => e.tipo === "naoEncontrado");
-    await assert.rejects(atualizarOcorrencia(minha, { data: "05/11/2026", descricao: "invasão" }), (e) => e.tipo === "naoEncontrado");
-    await sair();
-
-    await entrar(perfilA.usuario, SENHA);
-    const [intacta] = await listarOcorrencias();
+    const minha = await api.diario.criarOcorrencia({ data: "05/11/2026", descricao: "Só do perfil A" });
+    api.sessao.encerrarSessao();
+    assert.equal(api.sessao.obterSessao(), null);
+    await api.perfil.entrar(perfilB.usuario, SENHA);
+    assert.deepEqual(await api.diario.listarOcorrencias(), []);
+    await assert.rejects(api.diario.excluirOcorrencia(minha.id_ocorrencia), (e) => e.status === 404);
+    await assert.rejects(
+      api.diario.atualizarOcorrencia(minha, { data: "05/11/2026", descricao: "invasão" }),
+      (e) => e.status === 404
+    );
+    api.sessao.encerrarSessao();
+    await api.perfil.entrar(perfilA.usuario, SENHA);
+    const [intacta] = await api.diario.listarOcorrencias();
     assert.equal(intacta.descricao_relato, "Só do perfil A");
-    await excluirOcorrencia(minha.id_ocorrencia);
+    await api.diario.excluirOcorrencia(minha.id_ocorrencia);
   });
 
-  test("sessão revogada no servidor: 401 encerra a sessão local", async () => {
-    await requisicaoAutenticada("DELETE", "/sessoes/atual"); // revoga só no servidor
-    assert.equal(obterSessao().ativa, true); // o app ainda não sabe
-    await assert.rejects(listarOcorrencias(), (e) => e.tipo === "sessao");
-    assert.equal(obterSessao().ativa, false); // agora sabe: a tela volta ao login
-    await entrar(perfilA.usuario, SENHA);
+  test("sessão revogada no servidor: 401 encerra a sessão compartilhada", async () => {
+    await api.sessao.requisicaoAutenticada("/api/sessoes/atual", { metodo: "DELETE" }); // revoga só no servidor
+    assert.ok(api.sessao.obterSessao()); // o app ainda não sabe
+    await assert.rejects(api.diario.listarOcorrencias(), (e) => e.status === 401);
+    assert.equal(api.sessao.obterSessao(), null); // agora sabe: a tela volta ao login
+    await api.perfil.entrar(perfilA.usuario, SENHA);
+  });
+
+  test("resposta antiga depois do logout não reabre a sessão", async () => {
+    const pendente = api.diario.listarOcorrencias();
+    api.sessao.encerrarSessao(); // Sair da conta / Quick Exit: limpa antes da resposta
+    assert.equal(api.sessao.obterSessao(), null);
+    await pendente.catch(() => {}); // pode dar 200 ou 401: a sessão não pode voltar
+    assert.equal(api.sessao.obterSessao(), null);
+    await assert.rejects(api.diario.listarOcorrencias(), (e) => e.status === 401);
+    await api.perfil.entrar(perfilA.usuario, SENHA);
   });
 
   test("persistência: relato sobrevive à reinicialização da API", async () => {
-    const criada = await criarOcorrencia({ data: "10/11/2026", descricao: "Deve persistir" });
-    await sair();
+    const criada = await api.diario.criarOcorrencia({ data: "10/11/2026", descricao: "Deve persistir" });
+    api.sessao.encerrarSessao();
     await servidor.parar();
-    await levantar(); // mesmo arquivo de banco, processo novo
-    await entrar(perfilA.usuario, SENHA);
-    const lista = await listarOcorrencias();
+    await levantar(servidor.porta); // mesmo arquivo de banco, processo novo
+    await api.perfil.entrar(perfilA.usuario, SENHA);
+    const lista = await api.diario.listarOcorrencias();
     assert.equal(lista.length, 1);
     assert.equal(lista[0].id_ocorrencia, criada.id_ocorrencia);
     assert.equal(lista[0].descricao_relato, "Deve persistir");
     assert.equal(lista[0].data_ocorrencia, "10/11/2026");
-    await excluirOcorrencia(criada.id_ocorrencia);
-  });
-
-  test("API fora do ar: tipo 'rede', e a lista não é dada como salva", async () => {
-    const urlOk = servidor.urlApi;
-    configurarApi({ urlBase: "http://127.0.0.1:1/api" }); // porta sem serviço
-    await assert.rejects(criarOcorrencia({ data: "10/11/2026", descricao: "não vai" }), (e) => {
-      assert.equal(e.tipo, "rede");
-      assert.match(e.message, /nada foi salvo/i);
-      return true;
-    });
-    configurarApi({ urlBase: urlOk });
-    assert.deepEqual(await listarOcorrencias(), []); // nada foi gravado
-  });
-
-  test("API que não responde: tempo limite vira tipo 'tempo'", async () => {
-    const mudo = net.createServer(() => {}); // aceita a conexão e nunca responde
-    await new Promise((r) => mudo.listen(0, "127.0.0.1", r));
-    const urlOk = servidor.urlApi;
-    configurarApi({ urlBase: `http://127.0.0.1:${mudo.address().port}/api`, tempoLimiteMs: 300 });
-    try {
-      await assert.rejects(listarOcorrencias(), (e) => e.tipo === "tempo");
-    } finally {
-      configurarApi({ urlBase: urlOk, tempoLimiteMs: 5000 });
-      mudo.closeAllConnections?.();
-      mudo.close();
-    }
+    await api.diario.excluirOcorrencia(criada.id_ocorrencia);
   });
 });

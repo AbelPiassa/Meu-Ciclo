@@ -6,21 +6,24 @@ import CartaoLista from "../components/CartaoLista";
 import CampoTexto from "../components/CampoTexto";
 import BotaoPrimario from "../components/BotaoPrimario";
 import ModalConfirmacao from "../components/ModalConfirmacao";
-import useSessaoApi from "../hooks/useSessaoApi";
-import { ErroApi } from "../servicos/clienteApi";
-import { entrar } from "../servicos/sessao";
-import * as ocorrenciasApi from "../servicos/ocorrenciasApi";
+import useSessao from "../hooks/useSessao";
+import { obterSessao } from "../services/sessao.js";
+import * as ocorrenciasApi from "../services/ocorrencias.js";
 import { formatarData } from "../utils/datas";
 import { validarOcorrencia, LIMITE_DESCRICAO } from "../utils/validacaoOcorrencia";
+import { criarGuardaDeResposta } from "../utils/guardaResposta";
 import { canaisAjuda } from "../dados/dadosFicticios";
 import cores from "../tema/cores";
 
 // Diário de Ocorrências integrado à API (GET/POST/PUT/DELETE /api/ocorrencias).
-// Segurança: os relatos ficam só na memória da tela (nada em disco/log) e são descartados
-// quando a tela fecha ou a sessão termina. Os canais de ajuda funcionam mesmo sem a API.
-export default function DiarioOcorrencias() {
-  const sessao = useSessaoApi();
-
+// Usa a sessão única do aplicativo (services/sessao.js) e o cliente HTTP compartilhado
+// (services/api.js): esta tela não tem login próprio nem guarda token.
+// Segurança: os relatos ficam só na memória da tela e são descartados quando a sessão
+// termina (Sair da conta, 401 ou Quick Exit). Respostas que chegam depois disso são
+// ignoradas pela "geração" da sessão, para que nada antigo reapareça na tela.
+export default function DiarioOcorrencias({ navigation }) {
+  const sessao = useSessao();
+  const idPerfil = sessao?.id_perfil ?? null;
   const [ocorrencias, setOcorrencias] = useState([]);
   const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(null);
   const [data, setData] = useState("");
@@ -31,20 +34,80 @@ export default function DiarioOcorrencias() {
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState(false);
-  const [usuario, setUsuario] = useState("");
-  const [senha, setSenha] = useState("");
-
   // Trava síncrona contra toque duplo (o estado só atualiza no próximo render).
   const operacaoEmAndamento = useRef(false);
   const montada = useRef(true);
-  const cargaAtual = useRef(0);
+  // Muda a cada login/logout: invalida qualquer resposta que ainda esteja em voo.
+  const geracao = useRef(0);
 
   useEffect(() => {
     montada.current = true;
     return () => {
       montada.current = false;
+      geracao.current += 1;
     };
   }, []);
+
+  const limparDadosSensiveis = useCallback(() => {
+    setOcorrencias([]);
+    setOcorrenciaSelecionada(null);
+    setData("");
+    setDescricao("");
+    setMensagem("");
+    setErro(false);
+    setErroCarga("");
+    setCarregando(false);
+    setSalvando(false);
+    setConfirmandoExclusao(false);
+  }, []);
+
+  // Só aceita atualizar a tela se ela continua montada, na mesma sessão e na mesma geração.
+  function verificador(geracaoEsperada, idEsperado) {
+    return criarGuardaDeResposta({
+      idPerfil: idEsperado,
+      geracaoEsperada,
+      estaMontada: () => montada.current,
+      geracaoAtual: () => geracao.current,
+      idPerfilAtual: () => obterSessao()?.id_perfil ?? null,
+    });
+  }
+
+  const carregar = useCallback(async () => {
+    if (idPerfil === null) {
+      return;
+    }
+    const podeAtualizar = verificador(geracao.current, idPerfil);
+    setCarregando(true);
+    setErroCarga("");
+    try {
+      const lista = await ocorrenciasApi.listarOcorrencias();
+      if (!podeAtualizar()) {
+        return;
+      }
+      setOcorrencias(lista);
+      setOcorrenciaSelecionada((atual) =>
+        atual && lista.some((item) => item.id_ocorrencia === atual.id_ocorrencia) ? atual : null
+      );
+    } catch (falha) {
+      if (podeAtualizar()) {
+        setErroCarga(falha?.message || "Não foi possível carregar as ocorrências.");
+      }
+    } finally {
+      if (podeAtualizar()) {
+        setCarregando(false);
+      }
+    }
+  }, [idPerfil]);
+
+  // Ao entrar, sair ou perder a sessão: descarta o que estava na tela e recomeça.
+  useEffect(() => {
+    geracao.current += 1;
+    operacaoEmAndamento.current = false;
+    limparDadosSensiveis();
+    if (idPerfil !== null) {
+      carregar();
+    }
+  }, [idPerfil, limparDadosSensiveis, carregar]);
 
   function selecionarOcorrencia(ocorrencia) {
     setOcorrenciaSelecionada(ocorrencia);
@@ -62,52 +125,6 @@ export default function DiarioOcorrencias() {
     setErro(false);
   }
 
-  function mostrarErro(falha) {
-    // Mensagens de ErroApi já são em português e sem dados sensíveis.
-    setMensagem(falha instanceof ErroApi ? falha.message : "Não foi possível concluir a operação.");
-    setErro(true);
-  }
-
-  const carregar = useCallback(async () => {
-    const numeroDaCarga = ++cargaAtual.current;
-    setCarregando(true);
-    setErroCarga("");
-
-    try {
-      const lista = await ocorrenciasApi.listarOcorrencias();
-      if (!montada.current || numeroDaCarga !== cargaAtual.current) {
-        return;
-      }
-      setOcorrencias(lista);
-      setOcorrenciaSelecionada((atual) =>
-        atual && lista.some((item) => item.id_ocorrencia === atual.id_ocorrencia) ? atual : null
-      );
-    } catch (falha) {
-      if (montada.current && numeroDaCarga === cargaAtual.current) {
-        setErroCarga(falha instanceof ErroApi ? falha.message : "Não foi possível carregar as ocorrências.");
-      }
-    } finally {
-      if (montada.current && numeroDaCarga === cargaAtual.current) {
-        setCarregando(false);
-      }
-    }
-  }, []);
-
-  // Carrega ao entrar na tela / ao autenticar; descarta os relatos quando a sessão termina.
-  useEffect(() => {
-    if (sessao.ativa) {
-      carregar();
-      return;
-    }
-    cargaAtual.current++;
-    setOcorrencias([]);
-    setOcorrenciaSelecionada(null);
-    setData("");
-    setDescricao("");
-    setCarregando(false);
-    setErroCarga("");
-  }, [sessao.ativa, sessao.idPerfil, carregar]);
-
   function validarFormulario() {
     const resultado = validarOcorrencia({ data, descricao });
     if (!resultado.valido) {
@@ -119,46 +136,37 @@ export default function DiarioOcorrencias() {
 
   // Executa uma operação de rede com trava de duplo toque e tratamento único de erros.
   async function executar(operacao) {
-    if (operacaoEmAndamento.current) {
+    if (operacaoEmAndamento.current || idPerfil === null) {
       return;
     }
     operacaoEmAndamento.current = true;
+    const podeAtualizar = verificador(geracao.current, idPerfil);
     setSalvando(true);
     try {
-      await operacao();
+      await operacao(podeAtualizar);
     } catch (falha) {
-      if (montada.current) {
-        mostrarErro(falha);
-        if (falha instanceof ErroApi && falha.tipo === "naoEncontrado") {
+      if (podeAtualizar()) {
+        setMensagem(falha?.message || "Não foi possível concluir a operação.");
+        setErro(true);
+        if (falha?.status === 404) {
           carregar();
         }
       }
     } finally {
       operacaoEmAndamento.current = false;
-      if (montada.current) {
+      if (podeAtualizar()) {
         setSalvando(false);
       }
     }
-  }
-
-  async function entrarNaApi() {
-    await executar(async () => {
-      await entrar(usuario, senha);
-      setUsuario("");
-      setSenha("");
-      setMensagem("");
-      setErro(false);
-    });
   }
 
   async function cadastrarOcorrencia() {
     if (ocorrenciaSelecionada !== null || !validarFormulario()) {
       return;
     }
-
-    await executar(async () => {
+    await executar(async (podeAtualizar) => {
       const criada = await ocorrenciasApi.criarOcorrencia({ data, descricao });
-      if (!montada.current) {
+      if (!podeAtualizar()) {
         return;
       }
       setOcorrencias((listaAtual) => ocorrenciasApi.ordenarOcorrencias([...listaAtual, criada]));
@@ -171,10 +179,9 @@ export default function DiarioOcorrencias() {
     if (ocorrenciaSelecionada === null || !validarFormulario()) {
       return;
     }
-
-    await executar(async () => {
+    await executar(async (podeAtualizar) => {
       const atualizada = await ocorrenciasApi.atualizarOcorrencia(ocorrenciaSelecionada, { data, descricao });
-      if (!montada.current) {
+      if (!podeAtualizar()) {
         return;
       }
       setOcorrencias((listaAtual) =>
@@ -204,21 +211,18 @@ export default function DiarioOcorrencias() {
       setErro(true);
       return;
     }
-
     setConfirmandoExclusao(true);
   }
 
   async function excluirOcorrencia() {
     const alvo = ocorrenciaSelecionada;
     setConfirmandoExclusao(false);
-
     if (alvo === null) {
       return;
     }
-
-    await executar(async () => {
+    await executar(async (podeAtualizar) => {
       await ocorrenciasApi.excluirOcorrencia(alvo.id_ocorrencia);
-      if (!montada.current) {
+      if (!podeAtualizar()) {
         return;
       }
       setOcorrencias((listaAtual) => listaAtual.filter((item) => item.id_ocorrencia !== alvo.id_ocorrencia));
@@ -229,7 +233,6 @@ export default function DiarioOcorrencias() {
 
   async function abrirCanalAjuda(canal) {
     const numero = canal.numero.replace(/\D/g, "");
-
     try {
       // Abre o aplicativo de telefone. A ligação não é feita automaticamente.
       await Linking.openURL(`tel:${numero}`);
@@ -253,15 +256,14 @@ export default function DiarioOcorrencias() {
         </Pressable>
       </View>
 
-      {!sessao.ativa ? (
+      {idPerfil === null ? (
         <>
-          <Text style={estilos.subtitulo}>Entrar para abrir o diário</Text>
+          <Text style={estilos.subtitulo}>Entre na sua conta para ver seu diário</Text>
           <Text style={estilos.textoApoio}>
-            Seus relatos são salvos no servidor do projeto, ligados ao seu perfil. Entre com o usuário cadastrado.
+            O diário usa a mesma conta do aplicativo e os relatos ficam ligados ao seu perfil. Entre por "Minha
+            conta" ou pelo botão abaixo. Os canais de ajuda continuam disponíveis sem login.
           </Text>
-          <CampoTexto rotulo="Usuário" placeholder="usuario" valor={usuario} aoMudar={setUsuario} />
-          <CampoTexto rotulo="Senha" placeholder="********" valor={senha} aoMudar={setSenha} senha />
-          <BotaoPrimario texto={salvando ? "Entrando..." : "Entrar"} aoPressionar={entrarNaApi} />
+          <BotaoPrimario texto="Entrar na minha conta" aoPressionar={() => navigation.navigate("Login")} />
         </>
       ) : (
         <>
@@ -320,10 +322,7 @@ export default function DiarioOcorrencias() {
       )}
 
       {mensagem ? (
-        <Text
-          style={[estilos.textoApoio, erro && estilos.textoErro]}
-          accessibilityLiveRegion="polite"
-        >
+        <Text style={[estilos.textoApoio, erro && estilos.textoErro]} accessibilityLiveRegion="polite">
           {mensagem}
         </Text>
       ) : null}
@@ -363,13 +362,11 @@ const estilos = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   titulo: {
     fontSize: 22,
     fontWeight: "bold",
     color: cores.textoEscuro,
   },
-
   botaoMais: {
     width: 44,
     height: 36,
@@ -378,19 +375,16 @@ const estilos = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
   subtitulo: {
     fontSize: 17,
     fontWeight: "bold",
     color: cores.textoEscuro,
     marginTop: 6,
   },
-
   textoApoio: {
     fontSize: 12,
     color: cores.textoSuave,
   },
-
   textoErro: {
     color: cores.perigo,
   },

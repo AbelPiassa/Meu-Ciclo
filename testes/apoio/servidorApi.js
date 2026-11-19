@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Sobe a API real (backend/ do Abel) em porta livre e banco SQLite temporário.
+// Sobe a API real (backend/) em porta livre e banco SQLite temporário.
 // Procura o backend em MEU_CICLO_BACKEND_DIR ou em <raiz do repositório>/backend.
 const RAIZ = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 
@@ -34,8 +34,10 @@ export function removerPasta(pasta) {
   rmSync(pasta, { recursive: true, force: true });
 }
 
-export async function iniciarServidor(backendDir, caminhoBanco) {
-  const porta = await portaLivre();
+// Devolve a URL base sem "/api": é o formato de EXPO_PUBLIC_API_URL exigido pelo
+// cliente compartilhado (os caminhos já incluem /api/...).
+export async function iniciarServidor(backendDir, caminhoBanco, portaFixa) {
+  const porta = portaFixa ?? (await portaLivre());
   const processo = spawn(process.execPath, ["src/server.js"], {
     cwd: backendDir,
     env: { ...process.env, PORT: String(porta), HOST: "127.0.0.1", DATABASE_PATH: caminhoBanco },
@@ -44,7 +46,6 @@ export async function iniciarServidor(backendDir, caminhoBanco) {
   let saida = "";
   processo.stdout.on("data", (parte) => (saida += parte));
   processo.stderr.on("data", (parte) => (saida += parte));
-
   const urlBase = `http://127.0.0.1:${porta}`;
   const limite = Date.now() + 10000;
   while (Date.now() < limite) {
@@ -55,7 +56,8 @@ export async function iniciarServidor(backendDir, caminhoBanco) {
       const resposta = await fetch(`${urlBase}/health`);
       if (resposta.ok) {
         return {
-          urlApi: `${urlBase}/api`,
+          urlBase,
+          porta,
           parar: () =>
             new Promise((resolver) => {
               if (processo.exitCode !== null) return resolver();

@@ -1,13 +1,14 @@
-import { ErroApi } from "./clienteApi.js";
-import { obterIdPerfil, requisicaoAutenticada } from "./sessao.js";
+import { requisicaoAutenticada, obterSessao } from "./sessao.js";
 import { brParaIso, isoParaBr } from "../utils/datasApi.js";
 import { validarOcorrencia } from "../utils/validacaoOcorrencia.js";
+import { detalharCampos } from "../utils/mensagensApi.js";
 
 // CRUD do Diário de Ocorrências sobre /api/ocorrencias (contrato: backend/docs/API.md).
+// Usa exclusivamente o cliente HTTP compartilhado (services/api.js) e a sessão única
+// do aplicativo (services/sessao.js): aqui não existe token nem login próprios.
 // A tela trabalha com data em DD/MM/AAAA; a API, com AAAA-MM-DD. A conversão é feita aqui.
 export const TIPO_PADRAO = "Relato do diário";
 export const NIVEL_PERIGO_PADRAO = "Não informado";
-
 const ROTULOS = {
   data_ocorrencia: "Data",
   descricao_relato: "Descrição",
@@ -44,18 +45,28 @@ export function montarCorpo(idPerfil, { data, descricao }, base = {}) {
   };
 }
 
-function exigirPerfil() {
-  const idPerfil = obterIdPerfil();
-  if (idPerfil === null) {
-    throw new ErroApi({ tipo: "sessao", mensagem: "Sua sessão expirou. Entre novamente." });
+function erroDeSessao() {
+  const erro = new Error("Entre na sua conta para continuar.");
+  erro.status = 401;
+  return erro;
+}
+
+function exigirIdPerfil() {
+  const sessao = obterSessao();
+  if (!sessao) {
+    throw erroDeSessao();
   }
-  return idPerfil;
+  return sessao.id_perfil;
 }
 
 function exigirValido(campos) {
   const resultado = validarOcorrencia(campos);
   if (!resultado.valido) {
-    throw new ErroApi({ tipo: "validacao", mensagem: resultado.mensagem });
+    const erro = new Error(resultado.mensagem);
+    erro.status = 422;
+    erro.codigo = "VALIDACAO";
+    erro.campos = [];
+    throw erro;
   }
 }
 
@@ -64,10 +75,8 @@ async function comMensagensDeCampo(operacao) {
   try {
     return await operacao();
   } catch (erro) {
-    if (erro instanceof ErroApi && erro.tipo === "validacao" && erro.campos.length > 0) {
-      const detalhes = erro.campos
-        .map(({ campo, mensagem }) => `${ROTULOS[campo] ?? campo}: ${mensagem}`)
-        .join(" ");
+    if (erro?.status === 422 && Array.isArray(erro.campos) && erro.campos.length > 0) {
+      const detalhes = detalharCampos(erro.campos, ROTULOS);
       erro.message = `Revise os campos. ${detalhes}`;
     }
     throw erro;
@@ -75,34 +84,41 @@ async function comMensagensDeCampo(operacao) {
 }
 
 export async function listarOcorrencias() {
-  exigirPerfil();
-  const dados = await requisicaoAutenticada("GET", "/ocorrencias");
+  exigirIdPerfil();
+  const dados = await requisicaoAutenticada("/api/ocorrencias");
   if (!Array.isArray(dados)) {
-    throw new ErroApi({ tipo: "resposta", mensagem: "Resposta inesperada do servidor." });
+    throw new Error("Resposta inesperada do servidor.");
   }
   return ordenarOcorrencias(dados.map(paraTela));
 }
 
 export async function criarOcorrencia({ data, descricao }) {
-  const idPerfil = exigirPerfil();
+  const idPerfil = exigirIdPerfil();
   exigirValido({ data, descricao });
   const criado = await comMensagensDeCampo(() =>
-    requisicaoAutenticada("POST", "/ocorrencias", montarCorpo(idPerfil, { data, descricao }))
+    requisicaoAutenticada("/api/ocorrencias", {
+      metodo: "POST",
+      dados: montarCorpo(idPerfil, { data, descricao }),
+    })
   );
   return paraTela(criado);
 }
 
 export async function atualizarOcorrencia(atual, { data, descricao }) {
-  const idPerfil = exigirPerfil();
+  const idPerfil = exigirIdPerfil();
   exigirValido({ data, descricao });
   const corpo = montarCorpo(idPerfil, { data, descricao }, atual);
   const atualizado = await comMensagensDeCampo(() =>
-    requisicaoAutenticada("PUT", `/ocorrencias/${atual.id_ocorrencia}`, corpo)
+    requisicaoAutenticada(`/api/ocorrencias/${atual.id_ocorrencia}`, {
+      metodo: "PUT",
+      dados: corpo,
+    })
   );
   return paraTela(atualizado);
 }
 
 export async function excluirOcorrencia(id) {
-  exigirPerfil();
-  await requisicaoAutenticada("DELETE", `/ocorrencias/${id}`);
+  exigirIdPerfil();
+  // 204 sem corpo: o cliente compartilhado devolve null.
+  await requisicaoAutenticada(`/api/ocorrencias/${id}`, { metodo: "DELETE" });
 }

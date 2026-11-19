@@ -1,40 +1,94 @@
 # Entrega 4 — Diário de Ocorrências integrado à API
 
-## O que mudou
-* `src/pages/DiarioOcorrencias.js`: mesma interface; estado local trocado por chamadas à API (GET/POST/PUT/DELETE `/api/ocorrencias`).
-  Novos estados: login, carregando, lista vazia, erro com "Tentar novamente"; botões travados durante o envio (sem duplicidade).
-* Novos arquivos (nenhum código de outro integrante foi alterado): `src/servicos/{configApi,clienteApi,sessao,ocorrenciasApi}.js`,
-  `src/hooks/useSessaoApi.js`, `src/utils/{datasApi,validacaoOcorrencia}.js`, `testes/`, `jest.config.js`.
-* `package.json`: apenas 2 scripts (`test`, `test:telas`).
+Revisão final do PR #9 sobre a `master` que já contém os PRs #6 e #8 (backend e Perfil do Abel).
+O Diário passou a usar a infraestrutura compartilhada do aplicativo: uma única sessão, um único
+cliente HTTP e o login principal.
+
+## O que mudou nesta revisão
+
+- **Branch atualizada com a `master`** (`feat/diario-api`). O único conflito foi em `USO_IA.md`:
+  os registros das duas partes foram preservados (nada foi removido).
+- **Sessão independente removida.** `src/servicos/sessao.js` foi excluído; o Diário usa
+  `src/services/sessao.js` (`obterSessao`, `requisicaoAutenticada`, `encerrarSessao`).
+- **Cliente HTTP próprio removido.** `src/servicos/clienteApi.js` e `src/servicos/configApi.js`
+  foram excluídos; as chamadas usam `src/services/api.js` no contrato dele
+  (`requisicao(caminho, { metodo, dados, token })`, `Error` com `status`, `codigo` e `campos`).
+- **Login separado removido.** A tela não pede usuário/senha; sem sessão, mostra um botão que leva
+  ao Login do aplicativo. `src/hooks/useSessaoApi.js` também foi excluído (a tela usa `useSessao`).
+- **`EXPO_PUBLIC_API_URL` sem `/api`**, como no Perfil: os caminhos já incluem `/api/...`
+  (ex.: `http://127.0.0.1:3000`).
+- **Encerramento de sessão seguro.** Sair da conta, erro 401 e Quick Exit limpam a sessão
+  compartilhada; a tela descarta os relatos e ignora respostas que cheguem depois
+  (`src/utils/guardaResposta.js`), para que nada antigo reapareça.
+
+## Arquivos do Diário
+
+| Arquivo | Papel |
+| --- | --- |
+| `src/pages/DiarioOcorrencias.js` | tela do Diário (lista, formulário, exclusão com confirmação, canais de ajuda) |
+| `src/services/ocorrencias.js` | CRUD `/api/ocorrencias`, conversão de datas e montagem do corpo do PUT |
+| `src/utils/datasApi.js` | conversão DD/MM/AAAA ↔ AAAA-MM-DD e `hojeIso` (data local) |
+| `src/utils/validacaoOcorrencia.js` | validação do formulário (obrigatórios, data real, não futura, ≥1900, ≤5000) |
+| `src/utils/mensagensApi.js` | tradução das mensagens de campo devolvidas pela API |
+| `src/utils/guardaResposta.js` | guarda que descarta respostas de uma sessão já encerrada |
+| `testes/apoio/{ambiente,servidorApi}.js` | apoio: URL de teste e API real em porta livre com banco temporário |
+| `testes/servicos/{ocorrencias,guarda-resposta,datas-validacao,diario-integracao}.test.js` | testes |
+
+Nenhum arquivo de outro integrante foi alterado nesta revisão (Login, Cadastro, Perfil,
+Configurações, Rede de Apoio, ciclos e `backend/` continuam como estavam na `master`).
 
 ## Regras implementadas
-* **Perfil:** `id_perfil` vem da sessão (login), nunca fixo. A API ainda rejeita (422) outro perfil e oculta (404) registros alheios.
-* **Validação (app):** data e descrição obrigatórias; data real em DD/MM/AAAA; não pode ser futura nem anterior a 1900; descrição até 5000 caracteres.
-  A API aceita data futura (verificado com 2099-01-01), por isso a checagem é no app. Sugestão ao Abel: validar também no backend.
-* **PUT:** a API zera campos opcionais omitidos; o app envia o objeto completo, preservando tipo, "como se sentiu", nível de perigo e polícia.
-* **Erros:** rede, tempo limite (10 s), 401 (volta ao login), 404, 422 (mensagens do Zod traduzidas), 429, 5xx. Falha nunca é exibida como sucesso.
-* **Segurança:** token só em memória; relatos não vão a disco nem a log; ao perder a sessão a tela descarta os relatos da memória;
-  canais de ajuda (180/190) funcionam mesmo sem API/login; Quick Exit não foi alterado.
+
+- **Perfil:** `id_perfil` vem sempre da sessão, nunca é fixo. A API rejeita (422) outro perfil e
+  oculta (404) registros alheios.
+- **Validação no app:** data e descrição obrigatórias; data real em DD/MM/AAAA; não pode ser futura
+  nem anterior a 1900; descrição até 5000 caracteres. Nada é enviado quando o formulário é inválido.
+- **PUT:** a API zera campos opcionais omitidos; o app envia o objeto completo, preservando tipo,
+  "como se sentiu", nível de perigo e acionou_policia.
+- **Erros:** 401 (encerra a sessão e a tela volta ao estado sem conta), 404 (recarrega a lista),
+  422 (mensagens de campo traduzidas), 5xx e falha de rede (mensagem sem sucesso falso).
+- **Segurança:** token só em memória (módulo compartilhado); relatos só no estado da tela;
+  canais de ajuda (180/190) continuam disponíveis sem sessão.
 
 ## Como rodar a demonstração
+
 ```bash
-# 1) API (Node 24 recomendado) — em backend/, após o merge da branch do Abel
-HOST=0.0.0.0 npm start
-# 2) criar perfil fictício
+# 1) API (Node 24) — na raiz do repositório
+npm ci --prefix backend
+HOST=0.0.0.0 npm start --prefix backend
+
+# 2) perfil fictício
 curl -X POST http://127.0.0.1:3000/api/perfis -H 'Content-Type: application/json' \
- -d '{"usuario":"demo.ficticia","senha":"Apenas-demonstracao-123!","nome":"Fictícia","telefone_emergencia":"00000000000"}'
-# 3) app: EXPO_PUBLIC_API_URL=http://IP-DO-PC:3000/api npm start   (emulador Android: http://10.0.2.2:3000/api)
-#    Área protegida > Diário de Ocorrências > entrar com o usuário acima.
+  -d '{"usuario":"demo.ficticia","senha":"Apenas-demonstracao-123!","nome":"Fictícia","telefone_emergencia":"00000000000"}'
+
+# 3) app — EXPO_PUBLIC_API_URL sem /api
+EXPO_PUBLIC_API_URL=http://127.0.0.1:3000 npm run web
+#    Área protegida > Diário de Ocorrências (a conta é a mesma do Login do app)
 ```
 
-## Testes realizados (ver testes/README.md)
-* `npm test`: 17 unitários + 12 de integração com a API real do Abel (CRUD, PUT preservando campos, validações, 422/404/401, isolamento entre perfis, persistência após reiniciar a API, API fora do ar, tempo limite) — **29/29**.
-* Tela renderizada (Jest + Testing Library) contra a API real: login inválido/válido, validações, CRUD, duplo toque, falha de rede, exclusão, sessão revogada — **1 teste de fluxo, passou**.
-* Mutações deliberadas confirmaram que os testes detectam falhas (PUT sem preservar campos, sem checar data futura, 401 sem encerrar sessão, sem trava de toque duplo, erro exibido como sucesso).
+Emulador Android: `http://10.0.2.2:3000`. Celular físico: `http://IP_DO_PC:3000` com
+`HOST=0.0.0.0` no backend. Reiniciar o Expo após mudar a variável.
 
-## Não testado / limitações
-* **Não rodei no Expo, emulador ou celular** (sem aparelho no ambiente): layout real, teclado, Modal nativo e `tel:` não foram vistos.
-* Ambiente de teste com Node 22; o `engines` do backend pede Node 24.
-* Login/Cadastro do app ainda são telas simuladas; por isso o Diário pede usuário/senha na própria tela. Quando o Perfil integrar o login, basta chamar `entrar()` de `src/servicos/sessao.js` e esse bloco deixa de aparecer.
-* Política de sessão após Quick Exit (token continua em memória) está em aberto, conforme `backend/docs/API.md`.
-* Sem lint/typecheck: o projeto não tem configuração de ESLint/TypeScript.
+## Testes executados (18/11/2026)
+
+Ambiente do assistente: Linux, Node 24.22.3, backend com `npm ci`.
+
+- `npm test` — **34/34** (24 unitários + 10 de integração com a API real: CRUD, PUT preservando
+  campos, validações, 422/404/401, isolamento entre perfis, resposta antiga após logout,
+  persistência após reiniciar a API).
+- `npm run test:perfil` — **1/1** (teste do Perfil do PR #8, mantido na `master`).
+- `npm test --prefix backend` — **9/9**.
+- `npm run lint --prefix backend` e `npm run typecheck --prefix backend` — sem erros.
+- `git diff --check` — sem problemas de espaço em branco.
+
+Não houve teste em Expo, emulador ou aparelho físico nesta revisão, e o teste de tempo limite de
+15 s do cliente compartilhado não é automatizável sem alterar `src/services/api.js`.
+
+## Pendências
+
+- Validação visual no Expo/dispositivo (layout, teclado, `Modal`, `tel:`) — depende do grupo.
+- Política de sessão depois do Quick Exit segue em aberto em `backend/docs/API.md` (a sessão local
+  é encerrada, mas a revogação remota pode falhar offline e o token expira em 24 h).
+- A API aceita data futura; a checagem existe só no app. Sugestão de validação no backend.
+- Data Science: notebook e resultados desta branch foram preservados como estavam; qualquer
+  mudança nessa frente deve ser alinhada com o Abel, que coordena o tema.
