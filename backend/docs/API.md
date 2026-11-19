@@ -156,3 +156,7 @@ fictício automaticamente em banco isolado e remove seus arquivos temporários.
 ## Indicador acadêmico SINAN
 
 `GET /api/indicadores/sinan` — Bearer token obrigatório. Retorna o JSON agregado versionado em `data-science/saidas/indicador_agregado.json`, sem consultar perfis ou executar modelos. HTTP 200 (resultado), 401 (sessão inválida/ausente), 503 (arquivo indisponível ou inválido). A implantação deve incluir a pasta `data-science/saidas/`. Não é indicador individual, previsão ou classificação de risco.
+
+## SOS e painel acadêmico
+
+`POST /api/sos`: sessão de usuária obrigatória, conta fictícia `teste.*`, corpo `{latitude, longitude, origem}` (`simulada` ou `dispositivo_teste`), resposta 201 com ID, data UTC e status inicial Novo. 401 sem sessão, 403 se não for conta de teste, 422 para corpo inválido, 503 se a demonstração estiver desabilitada. O ID de perfil vem da sessão. O painel usa `GET /painel/api/alertas` e `PUT /painel/api/alertas/:id` com chave de operador distinta, configurada por `PAINEL_TOKEN` (64 caracteres hexadecimais). PUT recebe `{status}` (Novo, Em atendimento, Concluído). O HTML em `/painel` não contém a chave nem dados. Nenhuma autoridade é acionada.

@@ -5,6 +5,7 @@ import RedeApoio from "../pages/RedeApoio";
 import DiarioOcorrencias from "../pages/DiarioOcorrencias";
 import CanaisDeAjuda from "../pages/CanaisDeAjuda";
 import IndicadorSinan from "../pages/IndicadorSinan";
+import SosDemo from "../pages/SosDemo";
 import BotaoSaidaRapida from "../components/BotaoSaidaRapida";
 import cores from "../tema/cores";
 
@@ -27,6 +28,7 @@ export default function NavegacaoAreaProtegida() {
       <Pilha.Screen name="RedeApoio" component={RedeApoio} options={{ title: "Rede de Apoio" }} />
       <Pilha.Screen name="DiarioOcorrencias" component={DiarioOcorrencias} options={{ title: "Diário de Ocorrências" }} />
       <Pilha.Screen name="IndicadorSinan" component={IndicadorSinan} options={{ title: "Indicador acadêmico" }} />
+      <Pilha.Screen name="SosDemo" component={SosDemo} options={{ title: "SOS de demonstração" }} />
       <Pilha.Screen name="CanaisDeAjuda" component={CanaisDeAjuda} options={{ title: "Canais de Ajuda" }} />
     </Pilha.Navigator>
   );

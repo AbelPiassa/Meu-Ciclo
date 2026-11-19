@@ -70,3 +70,7 @@ Validação desta revisão: `npm test` 82/82, `npm run test:diario` 62/62, `npm 
 ### Integração do indicador acadêmico
 
 A área protegida inclui uma tela de resultados históricos do SINAN, consumindo `GET /api/indicadores/sinan` com a sessão compartilhada. O backend lê `data-science/saidas/indicador_agregado.json` diretamente; execute o projeto com essa pasta presente. Não há inferência individual, ranking de risco nem previsão. Validação final de integração pendente.
+
+### SOS e painel acadêmico de demonstração
+
+Disponível na área protegida e em `http://localhost:3000/painel`. Consulte [guia SOS](docs/entrega-4/sos-painel.md) para habilitar a chave separada do operador e testar com usuário `teste.*`. Nunca utilizar dados de vítimas reais. Implementação acadêmica, sem integração com serviços de emergência; validação visual e de aparelho pendente.

@@ -16,7 +16,7 @@ const corsOrigins = (process.env.CORS_ORIGINS ?? '')
   .map((value) => value.trim())
   .filter(Boolean);
 
-const app = createApp(db, { corsOrigins });
+const app = createApp(db, { corsOrigins, painelToken: process.env.PAINEL_TOKEN ?? '' });
 
 const server = app.listen(
   port,
