@@ -197,3 +197,26 @@ A pedido de Abel, ChatGPT/Codex preservou a análise nacional e os arquivos envi
 Resultados: 270 registros, 27 UFs, 10 anos, nenhum valor nulo, nenhuma duplicidade e 2.775.742 notificações.
 
 Os comandos foram executados localmente pelo integrante, com orientação do ChatGPT. Não houve treinamento de modelo nesta etapa.
+
+## 18/11/2026 — Machine Learning (Lucca)
+
+**Ferramenta:** ChatGPT.
+
+Atividades desenvolvidas com assistência de IA:
+
+- Definição dos problemas de classificação e clusterização.
+- Engenharia de atributos.
+- Implementação de regressão logística, árvore de decisão, Random Forest e K-Means.
+- Validação cruzada temporal e separação do teste reservado.
+- Comparação com modelos de referência.
+- Avaliação de métricas supervisionadas e não supervisionadas.
+- Criação de notebooks, testes automatizados e documentação.
+- Exportação dos modelos e resultados agregados.
+
+Os notebooks foram executados localmente pelo integrante, com seis testes automatizados aprovados.
+
+O modelo supervisionado não atingiu os critérios mínimos de desempenho preditivo. A clusterização apresentou estabilidade limitada e será utilizada exclusivamente como análise histórica exploratória.
+
+Nenhuma previsão de risco individual será disponibilizada.
+
+A validação independente e a integração ao aplicativo serão realizadas nas próximas etapas.
