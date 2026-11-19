@@ -50,3 +50,30 @@ Abel, 18/11: relatou login → Sobre → área escondida → Meu Perfil e novo c
 - Quick Exit durante carregamento/gravação/confirmação: calendário imediato, sessão limpa, voltar não revela Perfil.
 - F5 exige login; sem F5 navegação comum mantém sessão. Testar expiração/contas distintas e Rede de Apoio após adaptação pelo Lucca.
 - Validação visual e dispositivo físico ainda pendentes; não marcar integração concluída no Kanban só pelo código.
+
+## Diário de Ocorrências (PR #9) — revisão de 18/11/2026
+Branch `feat/diario-api` atualizada com a master dos PRs #6, #8, #11 e #7. O Diário usa
+exclusivamente `src/services/sessao.js` e `src/services/api.js`, sem sessão, cliente ou login
+próprios. A identidade usada é o objeto de `obterSessao()` (token + perfil), não apenas `id_perfil`:
+novo login na mesma conta invalida a resposta anterior (`"Sessão alterada"`, 401).
+
+Na tela, cada sessão monta um Diário novo (`key={obterVersaoSessao()}`), então lista, formulário,
+mensagens e modal de confirmação não reaproveitam nada da sessão anterior. As travas de listagem e
+de gravação guardam a sessão dona (`carga.current`/`gravacao.current`), só a dona libera a trava,
+há uma listagem por vez, escrita bloqueada enquanto a lista carrega e, em falha de rede na
+gravação, o app orienta conferir a lista antes de repetir.
+
+Testes executados no ambiente do assistente (Node 24.22.3): `npm test` 58/58 (38 do Diário + 20 da
+equipe), `npm test --prefix backend` 9/9, lint e typecheck do backend sem erros. Validação manual no
+Expo Web com duas contas fictícias: CRUD, painel sem sessão, novo login na mesma conta, Quick Exit
+durante requisição em andamento, isolamento entre contas e falha de rede na gravação. Não houve
+teste em emulador ou aparelho físico. Nenhum arquivo de outro integrante foi alterado e não houve
+merge do PR. Detalhes em `docs/entrega-4/diario-ocorrencias.md`.
+
+## Ajustes finais do Diário após Correção 2 — 18/11/2026
+
+O Diário mantém o contrato de sessão/cliente do Abel. O controlador `src/utils/controleDiario.js` acrescenta tickets de operação e bloqueio persistente de resultado incerto de escrita (rede/timeout/5xx) até GET bem-sucedido. Há exclusão mútua de leitura/escrita; recuperação de 404 é coordenada após a escrita. No blur, `useIsFocused()` desmonta dados/formulário/modal, mas preserva o controlador da sessão e sua escrita pendente. Controles locais desabilitados não alteram os componentes dos demais CRUDs.
+
+Testes finais: npm test 82/82, Diário 62/62, equipe 20/20, backend 9/9, lint/typecheck e build web aprovados. Renderização auxiliar e validação instrumentada no Expo Web estão separadas das suites em `docs/entrega-4/diario-ocorrencias.md`.
+
+Achado para alinhar com Abel: o timeout atual de `api.js` termina nos cabeçalhos; um corpo JSON incompleto pode manter a requisição pendente e atrasar o tratamento de 401. Não houve alteração do cliente compartilhado nem da API. Não confundir sucesso dos testes com segurança de produção. O modelo antigo saiu do escopo do PR #9, preservado em referência histórica; reprodução do PR #13 e interface do indicador são entregas posteriores.

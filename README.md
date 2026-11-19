@@ -31,7 +31,7 @@ O Meu Ciclo+ utiliza como fachada um aplicativo de acompanhamento do ciclo menst
 
 ## Status
 
-Projeto Integrador em desenvolvimento — Entrega 2 (2026).
+Projeto Integrador em desenvolvimento — Entrega 4 (2026); revisão final das integrações pendente.
 
 ### Desenvolvimento Mobile
 Aplicativo Meu Ciclo+ em desenvolvimento, utilizando React Native e Expo.
@@ -53,9 +53,16 @@ Aplicativo Meu Ciclo+ em desenvolvimento, utilizando React Native e Expo.
 
 API Express com SQLite persistente e quatro CRUDs disponível em [backend](backend/README.md).
 Requer Node 24.x; consulte o [contrato REST](backend/docs/API.md) antes de integrar as telas.
-Esta etapa ainda não integra o aplicativo à API. Validação do grupo e testes de dispositivo
-permanecem pendentes. [Divisão confirmada](backend/docs/RESPONSABILIDADES.md).
+Essa primeira etapa do backend ainda não integrava o aplicativo à API. As integrações atuais
+utilizam o cliente compartilhado; validação do grupo e testes de dispositivo permanecem pendentes.
+[Divisão confirmada](backend/docs/RESPONSABILIDADES.md).
 
 
 ### Cliente compartilhado e Perfil — Entrega 4
 Configuração, sessão única para todos os CRUDs, dependência dos PRs e evidências: [Guia de integração](docs/INTEGRACAO_SESSAO.md). Teste isolado com API real: `node --test tests/perfil-integracao.test.mjs` (requer dependências do backend). Validação manual dos novos botões ainda pendente.
+
+### Diário de Ocorrências — revisão do PR #9
+
+A etapa atual integra o Diário à mesma sessão, cliente HTTP e autenticação principal do aplicativo. `EXPO_PUBLIC_API_URL` deve ser a base sem `/api`. Gravação com resultado incerto bloqueia novas escritas até atualização bem-sucedida da lista; controles são bloqueados durante operações e dados da tela são limpos no blur, logout, Quick Exit e troca de sessão.
+
+Validação desta revisão: `npm test` 82/82, `npm run test:diario` 62/62, `npm run test:equipe` 20/20 e backend 9/9, além de lint/typecheck do backend. Requer Node 24 e dependências do backend. Cobertura, evidências e limitações em [Diário](docs/entrega-4/diario-ocorrencias.md) e [Testes](testes/README.md). Não representa segurança de produção. O diff do PR #9 não inclui Data Science; reprodução do PR #13 e interface do indicador são entregas separadas.
