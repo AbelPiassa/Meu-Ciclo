@@ -162,3 +162,20 @@ test('Respostas sem cache e CORS restrito à origem configurada', async t => {
   const other = await fetch(f.base + '/health', { headers: { Origin: 'https://example.invalid' } });
   assert.equal(other.headers.get('access-control-allow-origin'), null);
 });
+
+test('Indicador SINAN: autenticação, conteúdo agregado canônico e ausência de cache', async t => {
+  const f = await fixture(t);
+  const { token } = await register(f, 'teste.indicador');
+  const rota = '/api/indicadores/sinan';
+  assert.equal((await f.request('GET', rota)).status, 401);
+  const resposta = await f.request('GET', rota, undefined, token);
+  assert.equal(resposta.status, 200);
+  assert.equal(resposta.headers.get('cache-control'), 'no-store');
+  const { readFileSync } = await import('node:fs');
+  const esperado = JSON.parse(readFileSync(new URL('../../data-science/saidas/indicador_agregado.json', import.meta.url), 'utf8'));
+  assert.deepEqual(resposta.body, esperado);
+  assert.equal(resposta.body.grupos.reduce((n,g) => n + g.quantidade_ufs, 0), resposta.body.n_ufs);
+  assert.equal((await f.request('POST', rota, {}, token)).status, 404);
+  await f.request('DELETE', '/api/sessoes/atual', undefined, token);
+  assert.equal((await f.request('GET', rota, undefined, token)).status, 401);
+});

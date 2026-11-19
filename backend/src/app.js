@@ -1,4 +1,5 @@
 import express from 'express';
+import { readFileSync } from 'node:fs';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
@@ -122,6 +123,21 @@ export function createApp(db, { corsOrigins = [] } = {}) {
     res.locals.perfilId = Number(session.id_perfil);
     res.locals.tokenHash = hash;
     next();
+  });
+  // Indicador acadêmico agregado, sem consultar dados individuais ou executar modelos.
+  app.get('/api/indicadores/sinan', (_req, res) => {
+    try {
+      const arquivo = new URL('../../data-science/saidas/indicador_agregado.json', import.meta.url);
+      const indicador = JSON.parse(readFileSync(arquivo, 'utf8'));
+      if (indicador?.versao_esquema !== '1.0' || indicador.id !== 'perfil_historico_notificacoes_sinan' ||
+          typeof indicador.aviso !== 'string' || !indicador.aviso.trim() ||
+          !Array.isArray(indicador.grupos) || !Array.isArray(indicador.limitacoes)) {
+        return fail(res, 503, 'INDICADOR_INDISPONIVEL', 'Indicador acadêmico indisponível.');
+      }
+      return res.json(indicador);
+    } catch {
+      return fail(res, 503, 'INDICADOR_INDISPONIVEL', 'Indicador acadêmico indisponível.');
+    }
   });
   app.delete('/api/sessoes/atual', (_req, res) => {
     db.prepare('DELETE FROM sessoes WHERE token_hash = ?').run(res.locals.tokenHash);

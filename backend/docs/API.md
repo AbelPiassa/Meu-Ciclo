@@ -152,3 +152,7 @@ Não há mudanças de navegação neste backend.
 
 Para validação reproduzível dos 20 endpoints, usar `npm test`; a suíte já executa o seed
 fictício automaticamente em banco isolado e remove seus arquivos temporários.
+
+## Indicador acadêmico SINAN
+
+`GET /api/indicadores/sinan` — Bearer token obrigatório. Retorna o JSON agregado versionado em `data-science/saidas/indicador_agregado.json`, sem consultar perfis ou executar modelos. HTTP 200 (resultado), 401 (sessão inválida/ausente), 503 (arquivo indisponível ou inválido). A implantação deve incluir a pasta `data-science/saidas/`. Não é indicador individual, previsão ou classificação de risco.

@@ -66,3 +66,7 @@ Configuração, sessão única para todos os CRUDs, dependência dos PRs e evid�
 A etapa atual integra o Diário à mesma sessão, cliente HTTP e autenticação principal do aplicativo. `EXPO_PUBLIC_API_URL` deve ser a base sem `/api`. Gravação com resultado incerto bloqueia novas escritas até atualização bem-sucedida da lista; controles são bloqueados durante operações e dados da tela são limpos no blur, logout, Quick Exit e troca de sessão.
 
 Validação desta revisão: `npm test` 82/82, `npm run test:diario` 62/62, `npm run test:equipe` 20/20 e backend 9/9, além de lint/typecheck do backend. Requer Node 24 e dependências do backend. Cobertura, evidências e limitações em [Diário](docs/entrega-4/diario-ocorrencias.md) e [Testes](testes/README.md). Não representa segurança de produção. O diff do PR #9 não inclui Data Science; reprodução do PR #13 e interface do indicador são entregas separadas.
+
+### Integração do indicador acadêmico
+
+A área protegida inclui uma tela de resultados históricos do SINAN, consumindo `GET /api/indicadores/sinan` com a sessão compartilhada. O backend lê `data-science/saidas/indicador_agregado.json` diretamente; execute o projeto com essa pasta presente. Não há inferência individual, ranking de risco nem previsão. Validação final de integração pendente.

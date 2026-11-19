@@ -4,6 +4,7 @@ import Perfil from "../pages/Perfil";
 import RedeApoio from "../pages/RedeApoio";
 import DiarioOcorrencias from "../pages/DiarioOcorrencias";
 import CanaisDeAjuda from "../pages/CanaisDeAjuda";
+import IndicadorSinan from "../pages/IndicadorSinan";
 import BotaoSaidaRapida from "../components/BotaoSaidaRapida";
 import cores from "../tema/cores";
 
@@ -25,6 +26,7 @@ export default function NavegacaoAreaProtegida() {
       <Pilha.Screen name="Perfil" component={Perfil} options={{ title: "Meu Perfil" }} />
       <Pilha.Screen name="RedeApoio" component={RedeApoio} options={{ title: "Rede de Apoio" }} />
       <Pilha.Screen name="DiarioOcorrencias" component={DiarioOcorrencias} options={{ title: "Diário de Ocorrências" }} />
+      <Pilha.Screen name="IndicadorSinan" component={IndicadorSinan} options={{ title: "Indicador acadêmico" }} />
       <Pilha.Screen name="CanaisDeAjuda" component={CanaisDeAjuda} options={{ title: "Canais de Ajuda" }} />
     </Pilha.Navigator>
   );
