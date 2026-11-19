@@ -175,3 +175,25 @@ Após Abel identificar ausência de retorno no Login, o assistente adicionou bot
 **Resultados verificados antes da integração final:** 18/18 testes de serviços, validação e integração aprovados, além de 9/9 testes do backend.
 
 **Limitações:** os testes utilizam dados fictícios. A validação final da interface integrada ainda precisa ser concluída. O aplicativo possui finalidade acadêmica e não está validado para uso em produção.
+
+## 18/11/2026 — EDA por UF assistida
+
+A pedido de Abel, ChatGPT/Codex preservou a análise nacional e os arquivos enviados, revisou proveniência, completou verificações UF/ano e executou o notebook no ambiente do assistente. Não treinou modelo, não modificou telas e não realizou merge. Evidências em data-science/VALIDACAO.md; revisão humana e reprodução pelos colegas permanecem necessárias.
+
+## 18/11/2026 — Reprodução independente da EDA (PR #12)
+
+**Responsável:** Lucca Felipe.
+
+**Ferramenta:** ChatGPT.
+
+- Revisão dos arquivos do PR #12.
+- Sincronização da branch do Abel com a master.
+- Resolução do conflito em USO_IA.md, preservando as contribuições dos integrantes.
+- Configuração do ambiente virtual Python.
+- Instalação das dependências.
+- Reprodução integral do notebook pelo Jupyter.
+- Regeneração e validação da base tratada.
+
+Resultados: 270 registros, 27 UFs, 10 anos, nenhum valor nulo, nenhuma duplicidade e 2.775.742 notificações.
+
+Os comandos foram executados localmente pelo integrante, com orientação do ChatGPT. Não houve treinamento de modelo nesta etapa.
