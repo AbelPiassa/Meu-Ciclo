@@ -1,0 +1,74 @@
+{
+  "versao_esquema": "1.0",
+  "id": "perfil_historico_notificacoes_sinan",
+  "titulo": "Padrões históricos de notificações por UF",
+  "fonte": "SINAN/DATASUS — violência interpessoal e autoprovocada; sexo feminino; todas as idades; UF de notificação",
+  "periodo": [
+    2015,
+    2024
+  ],
+  "n_ufs": 27,
+  "n_registros": 270,
+  "total_notificacoes": 2775742,
+  "k": 2,
+  "silhouette": 0.360686323816249,
+  "ari_medio": 0.626276070464446,
+  "ari_p10": -0.05615221785686096,
+  "ari_temporal": 0.34024811182119546,
+  "status_validacao": "exploratorio; estabilidade limitada; não operacional",
+  "grupos": [
+    {
+      "grupo": 1,
+      "quantidade_ufs": 22,
+      "ufs": [
+        "Alagoas",
+        "Amapá",
+        "Amazonas",
+        "Bahia",
+        "Ceará",
+        "Distrito Federal",
+        "Espírito Santo",
+        "Goiás",
+        "Maranhão",
+        "Mato Grosso",
+        "Paraná",
+        "Paraíba",
+        "Pará",
+        "Pernambuco",
+        "Piauí",
+        "Rio Grande do Norte",
+        "Rio Grande do Sul",
+        "Rio de Janeiro",
+        "Roraima",
+        "Santa Catarina",
+        "Sergipe",
+        "São Paulo"
+      ],
+      "crescimento_geometrico_medio_pct": 14.122818978540463,
+      "desvio_log_crescimento_medio": 0.1927688915169892,
+      "fracao_media_anos_sem_aumento": 0.16666666666666666
+    },
+    {
+      "grupo": 2,
+      "quantidade_ufs": 5,
+      "ufs": [
+        "Acre",
+        "Mato Grosso do Sul",
+        "Minas Gerais",
+        "Rondônia",
+        "Tocantins"
+      ],
+      "crescimento_geometrico_medio_pct": 7.698760669533133,
+      "desvio_log_crescimento_medio": 0.14601367492952413,
+      "fracao_media_anos_sem_aumento": 0.3555555555555555
+    }
+  ],
+  "aviso": "Estimativa acadêmica a partir de notificações agregadas do SINAN. Não mede incidência, vítimas únicas, risco individual ou segurança de uma UF; não substitui avaliação profissional, policial ou jurídica. Não usar para decisões de atendimento.",
+  "uso": "descritivo retrospectivo e acadêmico; não é risco ou previsão",
+  "limitacoes": [
+    "Contagens absolutas não equivalem a taxas populacionais.",
+    "Cobertura, subnotificação e mudanças no registro podem influenciar os padrões.",
+    "Amostra pequena; agrupamentos exploratórios e sensíveis à escolha dos atributos.",
+    "Fonte conferida com os arquivos fornecidos; nova consulta ao portal e licença específica pendentes."
+  ]
+}

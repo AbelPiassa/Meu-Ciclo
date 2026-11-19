@@ -250,3 +250,28 @@ O modelo antigo de série temporal e seus resultados foram preservados na refer�
 No Expo Web final: CRUD, cancelamento/exclusão, POST persistido com resposta perdida produzindo um único registro, bloqueio até recuperação da lista, GET falho mantendo bloqueio, isolamento A/B, Quick Exit com GET/POST/PUT/DELETE atrasados e blur/goBack sem liberar a escrita pendente. A instrumentação inicial com callbacks antigos foi corrigida e os cenários relevantes repetidos com os handlers atuais. Resultados não atribuídos ao computador do integrante.
 
 **Limitações:** sem Android/iOS/aparelho físico; protótipo sem garantia de segurança de produção ou execução exatamente uma vez. Uma escrita já enviada pode concluir após logout. O timeout do cliente compartilhado não abrange integralmente corpo lento; achado documentado para alinhamento com Abel, sem modificar silenciosamente sua infraestrutura. Datas futuras permanecem pendência do backend. Nenhum merge do PR na master foi feito.
+
+---
+
+## 18/11/2026 — Machine Learning (Lucca)
+
+**Ferramenta:** ChatGPT.
+
+Atividades desenvolvidas com assistência de IA:
+
+- Definição dos problemas de classificação e clusterização.
+- Engenharia de atributos.
+- Implementação de regressão logística, árvore de decisão, Random Forest e K-Means.
+- Validação cruzada temporal e separação do teste reservado.
+- Comparação com modelos de referência.
+- Avaliação de métricas supervisionadas e não supervisionadas.
+- Criação de notebooks, testes automatizados e documentação.
+- Exportação dos modelos e resultados agregados.
+
+Os notebooks foram executados localmente pelo integrante, com seis testes automatizados aprovados.
+
+O modelo supervisionado não atingiu os critérios mínimos de desempenho preditivo. A clusterização apresentou estabilidade limitada e será utilizada exclusivamente como análise histórica exploratória.
+
+Nenhuma previsão de risco individual será disponibilizada.
+
+A validação independente e a integração ao aplicativo serão realizadas nas próximas etapas.

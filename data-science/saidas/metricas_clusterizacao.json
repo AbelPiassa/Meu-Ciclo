@@ -1,0 +1,123 @@
+{
+  "metadados": {
+    "fonte": "SINAN/DATASUS — violência interpessoal e autoprovocada; sexo feminino; todas as idades; UF de notificação",
+    "periodo": [
+      2015,
+      2024
+    ],
+    "sha256_csv": "63faf3cd26f375cc19974ec21628a78d64e73efef013e9ac425349c7c9a44437",
+    "python": "3.13.13",
+    "sklearn": "1.9.1",
+    "pandas": "3.1.1",
+    "numpy": "2.5.5",
+    "random_state": 42,
+    "aviso": "Estimativa acadêmica a partir de notificações agregadas do SINAN. Não mede incidência, vítimas únicas, risco individual ou segurança de uma UF; não substitui avaliação profissional, policial ou jurídica. Não usar para decisões de atendimento."
+  },
+  "unidade": "UF; 27 observações, cada uma agrega 10 anos",
+  "atributos": [
+    "media_log_crescimento",
+    "desvio_log_crescimento",
+    "fracao_anos_sem_aumento"
+  ],
+  "criterio": "Maior silhouette entre k=2..6 com no mínimo 3 UFs por grupo",
+  "k": 2,
+  "avaliacao": [
+    {
+      "k": 2,
+      "silhouette": 0.360686323816249,
+      "davies_bouldin": 0.9843175955850524,
+      "inercia": 55.710503797066245,
+      "menor_grupo": 5
+    },
+    {
+      "k": 3,
+      "silhouette": 0.4591299588866641,
+      "davies_bouldin": 0.6589660740024249,
+      "inercia": 36.85520140898364,
+      "menor_grupo": 2
+    },
+    {
+      "k": 4,
+      "silhouette": 0.33641229821260976,
+      "davies_bouldin": 0.8724779176672102,
+      "inercia": 25.939403498175707,
+      "menor_grupo": 2
+    },
+    {
+      "k": 5,
+      "silhouette": 0.3815310746915194,
+      "davies_bouldin": 0.7464381771534865,
+      "inercia": 18.092447992439002,
+      "menor_grupo": 2
+    },
+    {
+      "k": 6,
+      "silhouette": 0.37642090872730155,
+      "davies_bouldin": 0.672014362223158,
+      "inercia": 14.292037209033937,
+      "menor_grupo": 2
+    }
+  ],
+  "selecionado": {
+    "k": 2,
+    "silhouette": 0.360686323816249,
+    "davies_bouldin": 0.9843175955850524,
+    "inercia": 55.710503797066245,
+    "menor_grupo": 5
+  },
+  "estabilidade": {
+    "metodo": "50 subamostras de 80%; ARI sobre as 27 UFs",
+    "ari_medio": 0.626276070464446,
+    "ari_mediano": 0.6346946421880855,
+    "ari_p10": -0.05615221785686096,
+    "ari_2015_2023_vs_2015_2024": 0.34024811182119546
+  },
+  "perfis": [
+    {
+      "grupo": 1,
+      "quantidade_ufs": 22,
+      "ufs": [
+        "Alagoas",
+        "Amapá",
+        "Amazonas",
+        "Bahia",
+        "Ceará",
+        "Distrito Federal",
+        "Espírito Santo",
+        "Goiás",
+        "Maranhão",
+        "Mato Grosso",
+        "Paraná",
+        "Paraíba",
+        "Pará",
+        "Pernambuco",
+        "Piauí",
+        "Rio Grande do Norte",
+        "Rio Grande do Sul",
+        "Rio de Janeiro",
+        "Roraima",
+        "Santa Catarina",
+        "Sergipe",
+        "São Paulo"
+      ],
+      "crescimento_geometrico_medio_pct": 14.122818978540463,
+      "desvio_log_crescimento_medio": 0.1927688915169892,
+      "fracao_media_anos_sem_aumento": 0.16666666666666666
+    },
+    {
+      "grupo": 2,
+      "quantidade_ufs": 5,
+      "ufs": [
+        "Acre",
+        "Mato Grosso do Sul",
+        "Minas Gerais",
+        "Rondônia",
+        "Tocantins"
+      ],
+      "crescimento_geometrico_medio_pct": 7.698760669533133,
+      "desvio_log_crescimento_medio": 0.14601367492952413,
+      "fracao_media_anos_sem_aumento": 0.3555555555555555
+    }
+  ],
+  "uso": "agrupamentos descritivos históricos, rótulos arbitrários; sem ranking de risco"
+}

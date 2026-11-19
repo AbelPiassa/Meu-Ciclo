@@ -1,0 +1,4 @@
+-r requirements.txt
+scikit-learn==1.9.1
+seaborn==0.13.2
+joblib==1.6.0
