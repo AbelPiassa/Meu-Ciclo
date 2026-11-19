@@ -13,3 +13,40 @@ Execução pelo assistente, não atribuída aos integrantes. Python 3.12, pandas
 - `npm run lint` e `npm run typecheck` foram tentados na raiz: scripts inexistentes no package.json. Não são apresentados como aprovados. Nenhum código do aplicativo foi alterado.
 
 Os arquivos brutos recebidos foram copiados sem alterar seus bytes. A validação confirma consistência dos arquivos fornecidos, não nova consulta ao portal nem completude epidemiológica. Revisão humana, termos de reutilização, modelagem e integração permanecem pendentes.
+
+## Reprodução independente — Lucca — 18/11/2026
+
+A análise exploratória foi reproduzida integralmente em ambiente Windows, utilizando ambiente virtual Python.
+
+### Ambiente utilizado
+
+- Python 3.13.13
+- Pandas 3.1.1
+- Matplotlib 3.11.2
+- NumPy 2.5.5
+- Nbconvert 7.17.2
+- IPykernel 7.4.0
+
+### Comando executado
+
+`python -m jupyter nbconvert --to notebook --execute --inplace notebooks/01_eda_sinan_meu_ciclo.ipynb`
+
+### Resultados obtidos
+
+| Indicador | Resultado |
+|---|---:|
+| Registros | 270 |
+| Colunas | 3 |
+| Unidades federativas | 27 |
+| Anos | 10 |
+| Valores nulos | 0 |
+| Duplicidades UF/ano | 0 |
+| Total de notificações | 2.775.742 |
+
+O notebook foi executado integralmente pelo Jupyter, sem erros impeditivos. Os avisos relacionados ao kernel ZMQ não comprometeram a execução.
+
+A base tratada foi regenerada e apresentou os resultados esperados, confirmando a reprodução independente da EDA.
+
+A validação confirma a consistência dos arquivos disponíveis no repositório, não constituindo uma nova conferência diretamente no portal DATASUS.
+
+A base está tecnicamente disponível para a etapa seguinte de Machine Learning, respeitando suas limitações estatísticas e epidemiológicas.
