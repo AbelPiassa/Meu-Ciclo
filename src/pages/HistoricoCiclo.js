@@ -6,6 +6,7 @@ import CampoTexto from "../components/CampoTexto";
 import BotaoPrimario from "../components/BotaoPrimario";
 import ModalConfirmacao from "../components/ModalConfirmacao";
 import { useCiclos } from "../contextos/CiclosContext";
+import { obterSessao } from "../services/sessao.js";
 import {
   dataParaTexto,
   dataValida,
@@ -18,6 +19,11 @@ import cores from "../tema/cores";
 
 const NIVEIS_FLUXO = ["Leve", "Moderado", "Intenso"];
 const DURACAO_MAXIMA = 14;
+
+// Sessão vigente agora, lida direto do serviço compartilhado (não de um valor de render).
+function sessaoVigente() {
+  return obterSessao()?.token ?? null;
+}
 
 function duracaoDoCiclo(ciclo) {
   if (!ciclo.data_fim) {
@@ -50,11 +56,9 @@ export default function HistoricoCiclo({ route }) {
   const [erro, setErro] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
-  // Refs síncronas: a trava contra clique duplo vale na hora (o estado só vale na próxima renderização)
-  // e a sessão da tela é comparada depois de cada await.
+  // Trava síncrona contra clique duplo: vale na hora (o estado só vale na próxima renderização).
+  // A sessão é comparada com obterSessao() depois de cada await.
   const travaRef = useRef(false);
-  const sessaoRef = useRef(chaveSessao);
-  sessaoRef.current = chaveSessao;
 
   const cicloSelecionado = ciclos.find((ciclo) => ciclo.id_ciclo === idSelecionado) ?? null;
 
@@ -156,7 +160,7 @@ export default function HistoricoCiclo({ route }) {
 
   // Roda a operação com a trava ligada e só mostra o resultado se a sessão ainda for a mesma.
   async function executar(operacao, aoConcluir, textoFalha) {
-    const chave = sessaoRef.current;
+    const chave = sessaoVigente();
 
     travaRef.current = true;
     setSalvando(true);
@@ -164,15 +168,15 @@ export default function HistoricoCiclo({ route }) {
     try {
       const resultado = await operacao();
 
-      if (sessaoRef.current === chave) {
+      if (sessaoVigente() === chave) {
         aoConcluir(resultado);
       }
     } catch (falha) {
-      if (sessaoRef.current === chave) {
+      if (sessaoVigente() === chave) {
         avisar(falha.message || textoFalha, true);
       }
     } finally {
-      if (sessaoRef.current === chave) {
+      if (sessaoVigente() === chave) {
         travaRef.current = false;
         setSalvando(false);
       }
