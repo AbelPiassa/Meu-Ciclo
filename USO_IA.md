@@ -157,3 +157,21 @@ Após Abel identificar ausência de retorno no Login, o assistente adicionou bot
 - **Resultados reais (executados pelo assistente neste computador, dados fictícios):** `node --test tests/ciclos-integracao.test.mjs` 1/1; `node --test tests/ciclos-corrida-sessao.test.mjs` 1/1; `node --test tests/perfil-integracao.test.mjs` 1/1; `npm test --prefix backend` 9/9; lint e typecheck do backend sem erros; `expo export --platform web` compilou. No Expo Web, com as respostas de `/api/ciclos` atrasadas em 8 s por um patch de `fetch` e uma observação a cada 150 ms da tela: (1) logout durante a listagem: nenhum registro apareceu em 160 amostras; (2) conta A com listagem lenta, logout e entrada na conta B: só o registro da B apareceu em 151 amostras, nenhum da A; (3) clique em Salvar seguido de logout antes da resposta: "Registro cadastrado" nunca apareceu e a tela ficou limpa, mas o SQLite mostrou que a gravação já enviada foi concluída no servidor (registro da conta B).
 - **Limitações:** o logout não cancela uma gravação que já foi enviada (não há `AbortController`); ela pode concluir no servidor, como observado. A limpeza e os bloqueios do React seguem sem teste automatizado (validação manual na web); o teste novo cobre a regra de comparação no serviço, não o React. Sem celular físico nem Expo Go.
 - **Revisão:** pendente (Kaue).
+
+## 18/11/2026 — Integração da Rede de Apoio com a API (PR #7)
+
+**Integrante responsável:** Lucca Felipe.
+**Ferramenta:** ChatGPT.
+
+- Integração do CRUD da Rede de Apoio com o backend Express e SQLite.
+- Adaptação à autenticação e à sessão compartilhada desenvolvidas por Abel.
+- Remoção da dependência de autenticação independente.
+- Tratamento de erros HTTP, expiração de sessão e respostas de sessões anteriores.
+- Proteção contra operações duplicadas e limpeza dos dados da interface ao mudar de sessão.
+- Criação e atualização dos testes automatizados de integração.
+- Correção do teste de persistência após reinicialização do servidor.
+- Sincronização da branch com as entregas de Abel e Kauê.
+
+**Resultados verificados antes da integração final:** 18/18 testes de serviços, validação e integração aprovados, além de 9/9 testes do backend.
+
+**Limitações:** os testes utilizam dados fictícios. A validação final da interface integrada ainda precisa ser concluída. O aplicativo possui finalidade acadêmica e não está validado para uso em produção.
