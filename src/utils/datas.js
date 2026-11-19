@@ -49,3 +49,14 @@ export function somarDias(data, dias) {
 export function diasEntre(a, b) {
   return Math.round((b - a) / MS_DIA);
 }
+
+// A API usa AAAA-MM-DD; o app mostra DD/MM/AAAA. Estas duas funções convertem entre os formatos.
+export function dataApiParaTexto(valor) {
+  const [ano, mes, dia] = String(valor).split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
+export function textoParaDataApi(texto) {
+  const [dia, mes, ano] = texto.split("/");
+  return `${ano}-${mes}-${dia}`;
+}
