@@ -3,9 +3,13 @@ import { Switch } from "react-native";
 import TelaComRolagem from "../components/TelaComRolagem";
 import CartaoLista from "../components/CartaoLista";
 import { perfilFicticio } from "../dados/dadosFicticios";
+import useSessao from "../hooks/useSessao";
+import { encerrarSessao } from "../services/sessao.js";
+import { Text } from "react-native";
 import cores from "../tema/cores";
 
 export default function Configuracoes({ navigation }) {
+  const sessao = useSessao();
   const [notificacoes, setNotificacoes] = useState(perfilFicticio.notificacoes);
 
   return (
@@ -22,8 +26,21 @@ export default function Configuracoes({ navigation }) {
           />
         }
       />
-    
-     
+
+      <CartaoLista
+        icone="person-outline"
+        titulo="Minha conta"
+        subtitulo={sessao ? "Você está conectada" : "Entrar ou criar uma conta"}
+        aoPressionar={() => { if (!sessao) navigation.navigate("Login"); }}
+      />
+
+      {sessao ? (
+        <>
+          <Text>Conta conectada neste dispositivo.</Text>
+          <CartaoLista icone="log-out-outline" titulo="Sair da conta"
+            subtitulo="Encerrar a sessão" aoPressionar={encerrarSessao} />
+        </>
+      ) : null}
       <CartaoLista
         icone="information-circle-outline"
         titulo="Sobre"

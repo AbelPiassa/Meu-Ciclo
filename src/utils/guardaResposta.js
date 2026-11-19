@@ -1,19 +1,22 @@
 // Guarda para telas que exibem dados da sessão.
 // Uma resposta de rede só pode atualizar a interface se:
-//  - a tela continua montada;
-//  - a "geração" da sessão não mudou (login, logout, 401 ou Quick Exit incrementam);
-//  - o perfil da sessão é o mesmo que iniciou a requisição.
-// Assim, respostas antigas não repõem informações sensíveis depois do encerramento.
+//  - a tela continua ativa (montada e em foco);
+//  - a "geração" local não mudou (cada montagem/desmontagem incrementa);
+//  - a sessão é a MESMA que iniciou a requisição (comparação por identidade do objeto
+//    devolvido por obterSessao()). Comparar apenas id_perfil não basta: entrar de novo
+//    na mesma conta cria outra sessão, com outro token, e a resposta antiga deve ser
+//    descartada do mesmo jeito.
 export function criarGuardaDeResposta({
-  idPerfil,
+  sessao,
   geracaoEsperada,
-  estaMontada,
+  estaAtiva,
   geracaoAtual,
-  idPerfilAtual,
+  sessaoAtual,
 }) {
   return () =>
-    idPerfil !== null &&
-    estaMontada() === true &&
+    sessao !== null &&
+    sessao !== undefined &&
+    estaAtiva() === true &&
     geracaoAtual() === geracaoEsperada &&
-    (idPerfilAtual() ?? null) === idPerfil;
+    sessaoAtual() === sessao;
 }

@@ -1,7 +1,5 @@
 pandas
-numpy
-scipy
-scikit-learn
 matplotlib
 jupyter
-pytest
+nbconvert
+ipykernel

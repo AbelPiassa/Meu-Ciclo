@@ -45,18 +45,30 @@ export function montarCorpo(idPerfil, { data, descricao }, base = {}) {
   };
 }
 
-function erroDeSessao() {
-  const erro = new Error("Entre na sua conta para continuar.");
+function erroDeSessao(mensagem = "Entre na sua conta para continuar.") {
+  const erro = new Error(mensagem);
   erro.status = 401;
   return erro;
 }
 
-function exigirIdPerfil() {
+// A identidade da sessão é o próprio objeto de sessão (token + perfil), não só o id_perfil:
+// entrar de novo na mesma conta cria outra sessão e invalida respostas da anterior.
+function exigirSessao() {
   const sessao = obterSessao();
   if (!sessao) {
     throw erroDeSessao();
   }
-  return sessao.id_perfil;
+  return sessao;
+}
+
+async function chamar(caminho, opcoes) {
+  const sessao = exigirSessao();
+  const resposta = await requisicaoAutenticada(caminho, opcoes);
+  // Resposta que chega depois de logout, Quick Exit, 401 ou troca de conta não é entregue.
+  if (obterSessao() !== sessao) {
+    throw erroDeSessao("Sessão alterada. Entre novamente.");
+  }
+  return resposta;
 }
 
 function exigirValido(campos) {
@@ -84,8 +96,8 @@ async function comMensagensDeCampo(operacao) {
 }
 
 export async function listarOcorrencias() {
-  exigirIdPerfil();
-  const dados = await requisicaoAutenticada("/api/ocorrencias");
+  const sessao = exigirSessao();
+  const dados = await chamar("/api/ocorrencias");
   if (!Array.isArray(dados)) {
     throw new Error("Resposta inesperada do servidor.");
   }
@@ -93,32 +105,29 @@ export async function listarOcorrencias() {
 }
 
 export async function criarOcorrencia({ data, descricao }) {
-  const idPerfil = exigirIdPerfil();
+  const sessao = exigirSessao();
   exigirValido({ data, descricao });
   const criado = await comMensagensDeCampo(() =>
-    requisicaoAutenticada("/api/ocorrencias", {
+    chamar("/api/ocorrencias", {
       metodo: "POST",
-      dados: montarCorpo(idPerfil, { data, descricao }),
+      dados: montarCorpo(sessao.id_perfil, { data, descricao }),
     })
   );
   return paraTela(criado);
 }
 
 export async function atualizarOcorrencia(atual, { data, descricao }) {
-  const idPerfil = exigirIdPerfil();
+  const sessao = exigirSessao();
   exigirValido({ data, descricao });
-  const corpo = montarCorpo(idPerfil, { data, descricao }, atual);
+  const corpo = montarCorpo(sessao.id_perfil, { data, descricao }, atual);
   const atualizado = await comMensagensDeCampo(() =>
-    requisicaoAutenticada(`/api/ocorrencias/${atual.id_ocorrencia}`, {
-      metodo: "PUT",
-      dados: corpo,
-    })
+    chamar(`/api/ocorrencias/${atual.id_ocorrencia}`, { metodo: "PUT", dados: corpo })
   );
   return paraTela(atualizado);
 }
 
 export async function excluirOcorrencia(id) {
-  exigirIdPerfil();
+  exigirSessao();
   // 204 sem corpo: o cliente compartilhado devolve null.
-  await requisicaoAutenticada(`/api/ocorrencias/${id}`, { metodo: "DELETE" });
+  await chamar(`/api/ocorrencias/${id}`, { metodo: "DELETE" });
 }

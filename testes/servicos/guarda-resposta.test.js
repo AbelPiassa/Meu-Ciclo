@@ -3,53 +3,61 @@ import assert from "node:assert/strict";
 import { criarGuardaDeResposta } from "../../src/utils/guardaResposta.js";
 
 // A guarda é o que impede que uma resposta antiga reponha dados sensíveis depois de
-// logout, 401 ou Quick Exit. Aqui ela é testada isoladamente, com estado simulado.
-function cenario({ montada = true, geracao = 3, idPerfil = 7 } = {}) {
-  const estado = { montada, geracao, idPerfil };
+// logout, 401, Quick Exit ou novo login (inclusive na mesma conta).
+// A identidade comparada é o objeto de sessão (token + perfil), não apenas id_perfil.
+const SESSAO_A = { token: "a".repeat(64), id_perfil: 7 };
+
+function cenario(sessao = SESSAO_A) {
+  const estado = { ativa: true, geracao: 3, sessaoAtual: sessao };
   const guarda = criarGuardaDeResposta({
-    idPerfil,
-    geracaoEsperada: geracao,
-    estaMontada: () => estado.montada,
+    sessao,
+    geracaoEsperada: 3,
+    estaAtiva: () => estado.ativa,
     geracaoAtual: () => estado.geracao,
-    idPerfilAtual: () => estado.idPerfil,
+    sessaoAtual: () => estado.sessaoAtual,
   });
   return { estado, guarda };
 }
 
-test("aceita a resposta enquanto a tela, a geração e o perfil são os mesmos", () => {
+test("aceita a resposta enquanto a tela e a sessão são as mesmas", () => {
   const { guarda } = cenario();
   assert.equal(guarda(), true);
 });
 
 test("descarta a resposta depois que a tela foi desmontada (Quick Exit)", () => {
   const { estado, guarda } = cenario();
-  estado.montada = false;
+  estado.ativa = false;
   assert.equal(guarda(), false);
 });
 
 test("descarta a resposta depois do logout", () => {
   const { estado, guarda } = cenario();
-  estado.geracao += 1; // logout incrementa a geração
-  estado.idPerfil = null; // sessão limpa
+  estado.geracao += 1;
+  estado.sessaoAtual = null;
   assert.equal(guarda(), false);
 });
 
-test("descarta a resposta de uma sessão anterior mesmo com novo login", () => {
+test("descarta a resposta ao entrar de novo na MESMA conta (novo token, mesmo id_perfil)", () => {
   const { estado, guarda } = cenario();
   estado.geracao += 2; // logout + novo login
-  estado.idPerfil = 9; // outra conta
+  estado.sessaoAtual = { token: "b".repeat(64), id_perfil: 7 };
   assert.equal(guarda(), false);
-  estado.idPerfil = 7; // mesma conta, mas a geração mudou
+});
+
+test("descarta a resposta de outra conta", () => {
+  const { estado, guarda } = cenario();
+  estado.geracao += 1;
+  estado.sessaoAtual = { token: "c".repeat(64), id_perfil: 9 };
   assert.equal(guarda(), false);
 });
 
 test("nunca aceita quando não há sessão", () => {
   const guarda = criarGuardaDeResposta({
-    idPerfil: null,
+    sessao: null,
     geracaoEsperada: 0,
-    estaMontada: () => true,
+    estaAtiva: () => true,
     geracaoAtual: () => 0,
-    idPerfilAtual: () => null,
+    sessaoAtual: () => null,
   });
   assert.equal(guarda(), false);
 });

@@ -1,12 +1,18 @@
 import test, { beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import "../apoio/ambiente.js"; // precisa vir antes: define EXPO_PUBLIC_API_URL
-import { guardarSessao, obterSessao, limparSessao, encerrarSessao } from "../../src/services/sessao.js";
+import {
+  guardarSessao,
+  obterSessao,
+  limparSessao,
+  encerrarSessao,
+} from "../../src/services/sessao.js";
 import * as diario from "../../src/services/ocorrencias.js";
 
 // Testes unitários do Diário: nada de rede real, o fetch é substituído por um dublê.
-// Cobrem o contrato do cliente compartilhado (services/api.js) e da sessão única.
+// Cobrem o contrato do cliente compartilhado (services/api.js) e a identidade da sessão.
 const TOKEN = "a".repeat(64); // formato exigido por guardarSessao (64 hex)
+const TOKEN_NOVO = "b".repeat(64);
 const PERFIL = 7;
 const fetchOriginal = globalThis.fetch;
 const chamadas = [];
@@ -23,8 +29,16 @@ function resposta(status, corpo) {
   };
 }
 
-function entrar() {
-  guardarSessao({ token: TOKEN, id_perfil: PERFIL, expira_em: new Date(Date.now() + 86400000).toISOString() });
+function entrar(token = TOKEN, idPerfil = PERFIL) {
+  guardarSessao({ token, id_perfil: idPerfil, expira_em: new Date(Date.now() + 86400000).toISOString() });
+}
+
+function pendente() {
+  let liberar;
+  const promessa = new Promise((resolver) => {
+    liberar = resolver;
+  });
+  return { promessa, liberar };
 }
 
 beforeEach(() => {
@@ -178,27 +192,37 @@ test("401 encerra a sessão compartilhada", async () => {
   assert.equal(obterSessao(), null);
 });
 
-test("resposta que chega depois do logout não reabre a sessão", async () => {
+test("resposta que chega depois do logout é recusada", async () => {
   entrar();
-  let liberar;
-  responder = (_url, opcoes) => {
-    if (opcoes.method === "DELETE") {
-      return resposta(204);
-    }
-    return new Promise((resolver) => {
-      liberar = () =>
-        resolver(
-          resposta(200, [
-            { id_ocorrencia: 1, data_ocorrencia: "2026-11-01", tipo_ocorrencia: "x", descricao_relato: "sensível" },
-          ])
-        );
-    });
-  };
-  const pendente = diario.listarOcorrencias();
-  encerrarSessao(); // equivale a "Sair da conta" / Quick Exit: limpa antes da resposta
+  const espera = pendente();
+  responder = (_url, opcoes) => (opcoes.method === "DELETE" ? resposta(204) : espera.promessa);
+  const emVoo = diario.listarOcorrencias();
+  encerrarSessao(); // Sair da conta / Quick Exit: limpa antes da resposta
   assert.equal(obterSessao(), null);
-  liberar();
-  await pendente; // a resposta chega, mas a guarda da tela descarta (ver guarda-resposta.test.js)
+  espera.liberar(
+    resposta(200, [{ id_ocorrencia: 1, data_ocorrencia: "2026-11-01", tipo_ocorrencia: "x", descricao_relato: "sensível" }])
+  );
+  await assert.rejects(emVoo, (e) => e.status === 401 && /Sessão alterada/.test(e.message));
   assert.equal(obterSessao(), null);
-  await assert.rejects(diario.listarOcorrencias(), (e) => e.status === 401);
+});
+
+test("entrar de novo na MESMA conta descarta a resposta da sessão anterior", async () => {
+  entrar();
+  const espera = pendente();
+  responder = () => espera.promessa;
+  const emVoo = diario.listarOcorrencias();
+  entrar(TOKEN_NOVO, PERFIL); // mesmo id_perfil, nova sessão
+  espera.liberar(resposta(200, [{ id_ocorrencia: 1, data_ocorrencia: "2026-11-01", tipo_ocorrencia: "x", descricao_relato: "antigo" }]));
+  await assert.rejects(emVoo, (e) => e.status === 401 && /Sessão alterada/.test(e.message));
+  assert.equal(obterSessao().token, TOKEN_NOVO);
+});
+
+test("a próxima requisição já usa o token da sessão nova", async () => {
+  entrar();
+  responder = () => resposta(200, []);
+  await diario.listarOcorrencias();
+  entrar(TOKEN_NOVO, PERFIL);
+  await diario.listarOcorrencias();
+  assert.equal(chamadas[0].opcoes.headers.Authorization, `Bearer ${TOKEN}`);
+  assert.equal(chamadas[1].opcoes.headers.Authorization, `Bearer ${TOKEN_NOVO}`);
 });

@@ -183,14 +183,31 @@ describe("Diário de Ocorrências x API real (sessão compartilhada)", { skip: m
     await api.perfil.entrar(perfilA.usuario, SENHA);
   });
 
-  test("resposta antiga depois do logout não reabre a sessão", async () => {
-    const pendente = api.diario.listarOcorrencias();
+  test("resposta antiga depois do logout é recusada e não reabre a sessão", async () => {
+    // O erro é capturado desde o início para não virar rejeição não tratada.
+    const emVoo = api.diario.listarOcorrencias().then(() => null, (e) => e);
     api.sessao.encerrarSessao(); // Sair da conta / Quick Exit: limpa antes da resposta
     assert.equal(api.sessao.obterSessao(), null);
-    await pendente.catch(() => {}); // pode dar 200 ou 401: a sessão não pode voltar
+    const falha = await emVoo;
+    assert.equal(falha?.status, 401);
+    assert.match(falha.message, /Sessão alterada/);
     assert.equal(api.sessao.obterSessao(), null);
     await assert.rejects(api.diario.listarOcorrencias(), (e) => e.status === 401);
     await api.perfil.entrar(perfilA.usuario, SENHA);
+  });
+
+  test("novo login na MESMA conta descarta a resposta da sessão anterior", async () => {
+    const tokenAntigo = api.sessao.obterSessao().token;
+    const emVoo = api.diario.listarOcorrencias().then(() => null, (e) => e);
+    api.sessao.encerrarSessao();
+    await api.perfil.entrar(perfilA.usuario, SENHA);
+    const nova = api.sessao.obterSessao();
+    assert.notEqual(nova.token, tokenAntigo);
+    assert.equal(nova.id_perfil, idA); // mesma conta, sessão diferente
+    const falha = await emVoo;
+    assert.equal(falha?.status, 401);
+    assert.match(falha.message, /Sessão alterada/);
+    assert.equal(api.sessao.obterSessao(), nova);
   });
 
   test("persistência: relato sobrevive à reinicialização da API", async () => {

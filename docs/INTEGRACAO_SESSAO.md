@@ -51,13 +51,21 @@ Abel, 18/11: relatou login → Sobre → área escondida → Meu Perfil e novo c
 - F5 exige login; sem F5 navegação comum mantém sessão. Testar expiração/contas distintas e Rede de Apoio após adaptação pelo Lucca.
 - Validação visual e dispositivo físico ainda pendentes; não marcar integração concluída no Kanban só pelo código.
 
-## Diário de Ocorrências (PR #9) — 18/11/2026
-O PR #9 foi atualizado sobre a master com os PRs #6 e #8 integrados. Foram excluídos
-`src/servicos/{sessao,clienteApi,configApi,ocorrenciasApi}.js` e `src/hooks/useSessaoApi.js`:
-o Diário usa `src/services/sessao.js` e `src/services/api.js`, sem login próprio, com
-`EXPO_PUBLIC_API_URL` sem `/api`. O CRUD ficou em `src/services/ocorrencias.js` e a guarda que
-descarta respostas de sessão já encerrada (logout, 401, Quick Exit) em `src/utils/guardaResposta.js`.
-Testes executados no ambiente do assistente, Node 24.22.3: `npm test` 34/34 (24 unitários + 10 de
-integração com a API real), `npm run test:perfil` 1/1, `npm test --prefix backend` 9/9, lint e
-typecheck do backend sem erros. Nada foi mesclado. Validação visual e teste em dispositivo continuam
-pendentes. Detalhes em `docs/entrega-4/diario-ocorrencias.md`.
+## Diário de Ocorrências (PR #9) — revisão de 18/11/2026
+Branch `feat/diario-api` atualizada com a master dos PRs #6, #8, #11 e #7. O Diário usa
+exclusivamente `src/services/sessao.js` e `src/services/api.js`, sem sessão, cliente ou login
+próprios. A identidade usada é o objeto de `obterSessao()` (token + perfil), não apenas `id_perfil`:
+novo login na mesma conta invalida a resposta anterior (`"Sessão alterada"`, 401).
+
+Na tela, cada sessão monta um Diário novo (`key={obterVersaoSessao()}`), então lista, formulário,
+mensagens e modal de confirmação não reaproveitam nada da sessão anterior. As travas de listagem e
+de gravação guardam a sessão dona (`carga.current`/`gravacao.current`), só a dona libera a trava,
+há uma listagem por vez, escrita bloqueada enquanto a lista carrega e, em falha de rede na
+gravação, o app orienta conferir a lista antes de repetir.
+
+Testes executados no ambiente do assistente (Node 24.22.3): `npm test` 58/58 (38 do Diário + 20 da
+equipe), `npm test --prefix backend` 9/9, lint e typecheck do backend sem erros. Validação manual no
+Expo Web com duas contas fictícias: CRUD, painel sem sessão, novo login na mesma conta, Quick Exit
+durante requisição em andamento, isolamento entre contas e falha de rede na gravação. Não houve
+teste em emulador ou aparelho físico. Nenhum arquivo de outro integrante foi alterado e não houve
+merge do PR. Detalhes em `docs/entrega-4/diario-ocorrencias.md`.
