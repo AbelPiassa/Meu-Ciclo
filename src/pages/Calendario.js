@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BotaoPrimario from "../components/BotaoPrimario";
+import { useCiclos } from "../contextos/CiclosContext";
+import { dataParaTexto, diasEntre, textoParaData } from "../utils/datas";
 import cores from "../tema/cores";
 
 const MESES = [
@@ -15,13 +17,38 @@ const MESES_ABREVIADOS = [
 const DIAS_SEMANA = ["D", "S", "T", "Q", "Q", "S", "S"];
 
 
-const CICLO_SIMULADO = {
-  inicioUltimaMenstruacao: new Date(2026, 9, 5),
-  duracaoCiclo: 28,
-  duracaoMenstruacao: 5,
-};
-
 const MS_DIA = 24 * 60 * 60 * 1000;
+
+// Calcula, a partir dos registros do Histórico (mais recente primeiro), onde começou a última
+// menstruação, quantos dias ela durou e o tamanho do ciclo (média entre os inícios, ou 28 dias).
+function calcularParametrosCiclo(ciclos) {
+  if (ciclos.length === 0) {
+    return null;
+  }
+
+  const ultimo = ciclos[0];
+  const inicioUltimaMenstruacao = textoParaData(ultimo.data_inicio);
+  const duracaoMenstruacao = ultimo.data_fim
+    ? diasEntre(inicioUltimaMenstruacao, textoParaData(ultimo.data_fim)) + 1
+    : 5;
+
+  let duracaoCiclo = 28;
+
+  if (ciclos.length >= 2) {
+    const intervalos = [];
+
+    for (let i = 0; i < ciclos.length - 1; i++) {
+      intervalos.push(
+        diasEntre(textoParaData(ciclos[i + 1].data_inicio), textoParaData(ciclos[i].data_inicio))
+      );
+    }
+
+    const media = Math.round(intervalos.reduce((soma, dias) => soma + dias, 0) / intervalos.length);
+    duracaoCiclo = Math.min(45, Math.max(21, media));
+  }
+
+  return { inicioUltimaMenstruacao, duracaoMenstruacao, duracaoCiclo };
+}
 
 function mesmoDia(a, b) {
   return (
@@ -32,15 +59,17 @@ function mesmoDia(a, b) {
 }
 
 
-function posicaoNoCiclo(data) {
-  const { inicioUltimaMenstruacao, duracaoCiclo } = CICLO_SIMULADO;
+function posicaoNoCiclo(data, parametros) {
+  const { inicioUltimaMenstruacao, duracaoCiclo } = parametros;
   const dias = Math.round((data - inicioUltimaMenstruacao) / MS_DIA);
   return ((dias % duracaoCiclo) + duracaoCiclo) % duracaoCiclo;
 }
 
-function faseDoDia(data) {
-  const { duracaoCiclo, duracaoMenstruacao } = CICLO_SIMULADO;
-  const pos = posicaoNoCiclo(data);
+function faseDoDia(data, parametros) {
+  if (!parametros) return null;
+
+  const { duracaoCiclo, duracaoMenstruacao } = parametros;
+  const pos = posicaoNoCiclo(data, parametros);
   const ovulacao = duracaoCiclo - 14;
 
   if (pos < duracaoMenstruacao) return "menstruacao";
@@ -69,6 +98,27 @@ export default function Calendario({ navigation }) {
     new Date(hoje.getFullYear(), hoje.getMonth(), 1)
   );
   const [diaSelecionado, setDiaSelecionado] = useState(hoje);
+  const { ciclos, chaveSessao, ultimoSalvoId, logado, carregando, erro, recarregar } = useCiclos();
+
+  // Logout, Quick Exit, erro 401 ou troca de perfil: volta para o mês atual e limpa o dia selecionado.
+  useEffect(() => {
+    const agora = new Date();
+    setMesVisivel(new Date(agora.getFullYear(), agora.getMonth(), 1));
+    setDiaSelecionado(agora);
+  }, [chaveSessao]);
+
+  const parametros = useMemo(() => calcularParametrosCiclo(ciclos), [ciclos]);
+
+  // Ao salvar um registro no Histórico, o calendário mostra o mês desse registro
+  useEffect(() => {
+    const salvo = ciclos.find((ciclo) => ciclo.id_ciclo === ultimoSalvoId);
+
+    if (salvo) {
+      const inicio = textoParaData(salvo.data_inicio);
+      setMesVisivel(new Date(inicio.getFullYear(), inicio.getMonth(), 1));
+      setDiaSelecionado(inicio);
+    }
+  }, [ultimoSalvoId]);
 
   const semanas = useMemo(
     () => gerarSemanas(mesVisivel.getFullYear(), mesVisivel.getMonth()),
@@ -81,13 +131,31 @@ export default function Calendario({ navigation }) {
     );
   }
 
-  const { duracaoCiclo } = CICLO_SIMULADO;
-  const diasParaProxima = duracaoCiclo - posicaoNoCiclo(hoje);
-  const proximaMenstruacao = new Date(hoje.getTime() + diasParaProxima * MS_DIA);
+  const diasParaProxima = parametros
+    ? parametros.duracaoCiclo - posicaoNoCiclo(hoje, parametros)
+    : null;
+  const proximaMenstruacao = parametros
+    ? new Date(hoje.getTime() + diasParaProxima * MS_DIA)
+    : null;
 
   return (
     <ScrollView style={estilos.container} contentContainerStyle={estilos.conteudo}>
       <Text style={estilos.titulo}>Meu Ciclo</Text>
+
+      {!logado ? (
+        <Text style={estilos.aviso}>
+          Entre na sua conta (Configurações → Minha conta) para ver e registrar seus ciclos.
+        </Text>
+      ) : null}
+      {carregando ? <Text style={estilos.aviso}>Carregando registros...</Text> : null}
+      {erro ? (
+        <View style={estilos.avisoErro}>
+          <Text style={estilos.textoAvisoErro}>{erro}</Text>
+          <Pressable onPress={recarregar}>
+            <Text style={estilos.linkTentar}>Tentar novamente</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <View style={estilos.cardCalendario}>
         <View style={estilos.navMes}>
@@ -113,7 +181,7 @@ export default function Calendario({ navigation }) {
             {semana.map((data, j) => {
               if (!data) return <View key={j} style={estilos.celula} />;
 
-              const fase = faseDoDia(data);
+              const fase = faseDoDia(data, parametros);
               const ehHoje = mesmoDia(data, hoje);
               const selecionado = mesmoDia(data, diaSelecionado);
 
@@ -151,25 +219,40 @@ export default function Calendario({ navigation }) {
 
         <View style={estilos.legenda}>
           <ItemLegenda cor={cores.primaria} texto="Menstruação" />
-          <ItemLegenda cor={cores.primariaClara} texto="Período fértil" />
-          <ItemLegenda cor={cores.ovulacao} texto="Ovulação" />
+          <ItemLegenda cor={cores.primariaClara} texto="Fértil (estimativa)" />
+          <ItemLegenda cor={cores.ovulacao} texto="Ovulação (estimativa)" />
         </View>
       </View>
 
       <View style={estilos.cardProximo}>
-        <Text style={estilos.proximoTitulo}>Próximo período</Text>
-        <View style={estilos.proximoLinha}>
-          <Text style={estilos.proximoTexto}>
-            Previsto para {proximaMenstruacao.getDate()} de{" "}
-            {MESES_ABREVIADOS[proximaMenstruacao.getMonth()]}
-          </Text>
-          <Text style={estilos.proximoTexto}>Em {diasParaProxima} dias</Text>
-        </View>
+        <Text style={estilos.proximoTitulo}>Próximo período (estimativa)</Text>
+        {parametros ? (
+          <View style={estilos.proximoLinha}>
+            <Text style={estilos.proximoTexto}>
+              Previsto para {proximaMenstruacao.getDate()} de{" "}
+              {MESES_ABREVIADOS[proximaMenstruacao.getMonth()]}
+            </Text>
+            <Text style={estilos.proximoTexto}>Em {diasParaProxima} dias</Text>
+          </View>
+        ) : (
+          <Text style={estilos.proximoTexto}>Registre seu primeiro ciclo.</Text>
+        )}
       </View>
+
+      <Text style={estilos.aviso}>
+        As previsões de menstruação, período fértil e ovulação são apenas estimativas calculadas
+        a partir dos seus registros. Não têm garantia clínica e não devem ser usadas como método
+        contraceptivo. Em caso de dúvida, procure um profissional de saúde.
+      </Text>
 
       <BotaoPrimario
         texto="Adicionar registro"
-        aoPressionar={() => navigation.navigate("HistoricoCiclo")}
+        aoPressionar={() =>
+          navigation.navigate("HistoricoCiclo", {
+            novaData: dataParaTexto(diaSelecionado),
+            n: Date.now(),
+          })
+        }
       />
     </ScrollView>
   );
@@ -307,6 +390,29 @@ const estilos = StyleSheet.create({
   textoLegenda: {
     fontSize: 11,
     color: cores.textoSuave,
+  },
+
+  aviso: {
+    fontSize: 13,
+    color: cores.textoSuave,
+  },
+
+  avisoErro: {
+    backgroundColor: cores.perigoClaro,
+    borderRadius: 10,
+    padding: 12,
+    gap: 6,
+  },
+
+  textoAvisoErro: {
+    fontSize: 13,
+    color: cores.perigo,
+  },
+
+  linkTentar: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: cores.primaria,
   },
 
   cardProximo: {
