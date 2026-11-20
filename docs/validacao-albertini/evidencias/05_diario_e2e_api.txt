@@ -1,0 +1,42 @@
+PASS 01 POST cria ocorrência (201 + id_ocorrencia + Location) — status 201
+PASS 02 POST segunda ocorrência com campos opcionais
+PASS 03 GET lista (2 itens, mais novo primeiro) — ids 2,1
+PASS 04 GET por ID
+PASS 05 PUT edita (200) e devolve valores novos
+PASS 06 Edição persistida (GET após PUT)
+PASS 07 Validação rejeita: data inexistente 2026-02-30 — status 422
+PASS 08 Validação rejeita: data 29/02 em ano não bissexto — status 422
+PASS 09 Validação rejeita: data malformada — status 422
+PASS 10 Validação rejeita: tipo vazio — status 422
+PASS 11 Validação rejeita: tipo > 100 — status 422
+PASS 12 Validação rejeita: descrição vazia — status 422
+PASS 13 Validação rejeita: descrição > 5000 — status 422
+PASS 14 Validação rejeita: como_se_sentiu > 200 — status 422
+PASS 15 Validação rejeita: nível de perigo inválido — status 422
+PASS 16 Validação rejeita: campo extra — status 422
+PASS 17 Validação rejeita: id_perfil de outra conta — status 422
+PASS 18 Validação rejeita: acionou_policia não booleano — status 422
+PASS 19 Limites exatos (5000/100) são aceitos
+PASS 20 29/02/2024 (bissexto) aceito
+PASS 21 PUT com dado inválido → 422 e registro intacto
+PASS 22 Sem token → 401
+PASS 23 Token inválido → 401
+PASS 24 Conta B lista só os próprios registros
+PASS 25 B não lê registro da A (404)
+PASS 26 B não edita registro da A (404 ou 422) — status 404
+PASS 27 B não exclui registro da A (404)
+PASS 28 Filtro ?id_perfil de outra conta é recusado — status 404
+PASS 29 Registro da A continua intacto após tentativas da B
+PASS 30 Logout (DELETE /sessoes/atual) → 204
+PASS 31 Token antigo recusado após logout (401)
+PASS 32 Novo login devolve novo token e mesmo id_perfil
+PASS 33 Dados persistem após logout/login — 4 registros
+PASS 34 DELETE → 204 sem corpo
+PASS 35 Registro excluído → 404
+PASS 36 Excluir de novo → 404
+PASS 37 Lista reflete a exclusão
+PASS 38 Exclusão na A não afeta a B
+PASS 39 Resposta sem cache (Cache-Control) — no-store
+{"total":39,"falhas":0,"ids":{"o1":1,"o3":3,"o4":4,"ob":5,"idA":1,"idB":2}}
+Após REINICIAR o servidor: login OK, registros da conta A = 3 (esperado 3) ids 4,3,1
+POST com data futura (2099-01-01) direto na API → HTTP 201 (201 = backend aceita; o app bloqueia no cliente)
