@@ -97,3 +97,28 @@ jobs:
           path: data-science/notebooks/*.ipynb
           if-no-files-found: error
           retention-days: 30
+
+  preparar_dependencias:
+    name: Preparar atualizacao de dependencias do Expo 57
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Gerar package e lock consistentes sem push
+        run: |
+          npm install expo@~57.0.33
+          npx expo install expo-font
+          mkdir -p revisao-deps
+          cp package.json package-lock.json revisao-deps/
+      - name: Artefato para revisao humana
+        uses: actions/upload-artifact@v4
+        with:
+          name: proposta-deps-expo-57
+          path: revisao-deps/
+          if-no-files-found: error
+          retention-days: 7
