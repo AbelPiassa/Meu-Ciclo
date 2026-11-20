@@ -19,7 +19,27 @@ Branch: `final/kaue-mobile`, a partir do `master` em `e0fa3da` (PR #15). Dados e
 
 Não executados ainda: `npx expo-doctor`.
 
-## Validação em aparelho físico (Expo Go) — casos EG-01 a EG-23
-Aparelho / Android ou iOS / versão do Expo Go / SHA testado: _preencher na execução_.
+## Validação em aparelho físico — 19/11/2026
+**Ambiente real:** iPhone, navegador **Safari**, app em **Expo Web** (`http://192.168.3.2:8081`) falando com a API local (`http://192.168.3.2:3000`) pela rede Wi-Fi. Código testado: branch `final/kaue-mobile` (base `e0fa3da` + `ab102a0`).
 
-Todos os casos estão **Não executados** até a execução no aparelho. A cada caso executado, registrar Aprovado ou Reprovado e a evidência (print sem dados pessoais).
+**Não foi Expo Go.** O Expo Go da App Store (SDK 58) não abre este projeto (SDK 57) e uma development build para iPhone exige conta Apple paga. Portanto os casos abaixo valem como teste em aparelho físico pelo navegador, e não como teste do app nativo no Expo Go.
+
+Modelo do aparelho e versão do iOS: _preencher_. Resultados informados pelo integrante; prints: _anexar_.
+
+| ID | Caso | Resultado | Observação |
+|---|---|---|---|
+| EG-01 | Abrir aplicativo | Aprovado | Abre na fachada (Calendário) |
+| EG-02 | Navegar abas | Aprovado | |
+| EG-03 | Gatilho de três toques | Aprovado | |
+| EG-04 | Quick Exit | Aprovado | |
+| EG-05 | Voltar após Quick Exit | Aprovado | |
+| EG-06 | Criar conta fictícia | Aprovado | Conta `teste.kaue1` gravada no SQLite (conferido no banco) |
+| EG-08 | Ciclos CRUD | Aprovado | Criar, editar, excluir |
+| EG-09 | Calendário/Histórico | Aprovado | |
+| EG-15 | Persistência após logout/login | Aprovado | |
+| EG-17 | Ligue 180 | Aprovado | Abre a confirmação de ligação; cancelado, sem ligar |
+| EG-18 | Ligue 190 | Aprovado | Abre a confirmação de ligação; cancelado, sem ligar |
+| EG-07, EG-10 a EG-14, EG-16, EG-19 a EG-23 | Perfil, Rede de Apoio, Diário, isolamento, indicador SINAN, SOS/painel, reinício da API | Não executado | |
+
+### Ocorrência durante o teste
+Na primeira tentativa de cadastro apareceu "Não foi possível conectar à API ou o tempo de espera terminou". A API estava acessível pelo iPhone (`/health` ok) e uma requisição equivalente feita pelo navegador do PC funcionou. Na nova tentativa o cadastro funcionou. A causa mais provável é a página carregada antes de a API ser reiniciada com a origem do celular liberada em `CORS_ORIGINS`. Não houve alteração de código.
