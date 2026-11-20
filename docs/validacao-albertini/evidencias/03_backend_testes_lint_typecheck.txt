@@ -1,0 +1,37 @@
+# backend: npm test
+
+> meu-ciclo-api@0.1.0 test
+> node --test
+
+✔ Perfil: POST, GET coleção/ID, PUT e DELETE; senha nunca é retornada (198.232065ms)
+✔ ciclos: cinco operações persistem no banco e tratam registro ausente (106.021536ms)
+✔ contatos: cinco operações persistem no banco e tratam registro ausente (74.908462ms)
+✔ ocorrencias: cinco operações persistem no banco e tratam registro ausente (78.426823ms)
+✔ Isolamento entre perfis em todos os recursos e relacionamento validado (156.372959ms)
+✔ Validações: datas impossíveis, intervalo, telefone, campos extras, JSON e IDs (72.345686ms)
+✔ Login, conflito de usuário, expiração e revogação de sessão (168.01677ms)
+✔ Banco em arquivo: reabrir mantém os quatro recursos; excluir Perfil remove filhos e sessões (80.075352ms)
+✔ Respostas sem cache e CORS restrito à origem configurada (6.751664ms)
+✔ Indicador SINAN: autenticação, conteúdo agregado canônico e ausência de cache (51.430767ms)
+✔ SOS: conta fictícia autenticada, painel separado, localização, status e isolamento (271.363726ms)
+✔ Migração v1 para v2 preserva perfil e cria tabela SOS (11.488955ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1703.111325
+
+# backend: lint
+
+> meu-ciclo-api@0.1.0 lint
+> eslint .
+
+
+# backend: typecheck
+
+> meu-ciclo-api@0.1.0 typecheck
+> tsc -p jsconfig.json
+
