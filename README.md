@@ -8,14 +8,11 @@ Violência contra a Mulher — Aplicativo de Apoio Camuflado.
 ## Conceito
 O Meu Ciclo+ utiliza como fachada um aplicativo de acompanhamento do ciclo menstrual, contendo uma área protegida de apoio acessada por meio de um gatilho oculto.
 
-## Tecnologias previstas
-- React Native
-- Expo SDK 57
-- React Navigation
-- Node.js
-- Express
-- Banco de dados relacional
-- Python para Data Science
+## Tecnologias utilizadas
+- React Native + Expo SDK 57 e React Navigation
+- Node.js 24 + Express
+- SQLite relacional, com schema versionado e migração para SOS
+- Python para Data Science (SINAN/DATASUS)
 
 ## Integrantes
 - Lucca [DATA SCIENCE]
@@ -31,7 +28,7 @@ O Meu Ciclo+ utiliza como fachada um aplicativo de acompanhamento do ciclo menst
 
 ## Status
 
-Projeto Integrador em desenvolvimento — Entrega 4 (2026); revisão final das integrações pendente.
+Entrega 4 — código das frentes de CRUD, Data Science, SOS e painel incorporado à master. Validação funcional final, evidências de dispositivo e envio ao Blackboard ainda dependem de confirmação.
 
 ### Desenvolvimento Mobile
 Aplicativo Meu Ciclo+ em desenvolvimento, utilizando React Native e Expo.
@@ -44,22 +41,21 @@ Aplicativo Meu Ciclo+ em desenvolvimento, utilizando React Native e Expo.
 - Gráfico de evolução anual produzido.
 - Documentação disponível em [Data Science](data-science/README.md).
 
-### Próximas etapas
-- Ampliar a análise exploratória.
-- Desenvolver e avaliar o primeiro modelo de Data Science.
-- Continuar a integração entre aplicativo e API.
+### Estado atual e limitações
+- A EDA e os modelos de classificação e clusterização estão versionados em `data-science/`.
+- A classificação não atingiu os critérios preditivos estabelecidos; o aplicativo mostra apenas indicador histórico agregado e exploratório.
+- A integração final e os testes de aparelho, SOS e painel precisam ser validados e registrados no commit de entrega.
 
-## Backend — primeira implementação da Entrega 4
+## Backend — Entrega 4
 
 API Express com SQLite persistente e quatro CRUDs disponível em [backend](backend/README.md).
 Requer Node 24.x; consulte o [contrato REST](backend/docs/API.md) antes de integrar as telas.
-Essa primeira etapa do backend ainda não integrava o aplicativo à API. As integrações atuais
-utilizam o cliente compartilhado; validação do grupo e testes de dispositivo permanecem pendentes.
+Os quatro CRUDs possuem implementação de API e cliente; a validação integral no commit final permanece pendente.
 [Divisão confirmada](backend/docs/RESPONSABILIDADES.md).
 
 
 ### Cliente compartilhado e Perfil — Entrega 4
-Configuração, sessão única para todos os CRUDs, dependência dos PRs e evidências: [Guia de integração](docs/INTEGRACAO_SESSAO.md). Teste isolado com API real: `node --test tests/perfil-integracao.test.mjs` (requer dependências do backend). Validação manual dos novos botões ainda pendente.
+Configuração, autenticação e sessão compartilhada: [Guia de integração](docs/INTEGRACAO_SESSAO.md). Teste automatizado de integração: `node --test tests/perfil-integracao.test.mjs` (requer dependências do backend). Confira os testes de dispositivo no relatório final.
 
 ### Diário de Ocorrências — revisão do PR #9
 
@@ -69,8 +65,15 @@ Validação desta revisão: `npm test` 82/82, `npm run test:diario` 62/62, `npm 
 
 ### Integração do indicador acadêmico
 
-A área protegida inclui uma tela de resultados históricos do SINAN, consumindo `GET /api/indicadores/sinan` com a sessão compartilhada. O backend lê `data-science/saidas/indicador_agregado.json` diretamente; execute o projeto com essa pasta presente. Não há inferência individual, ranking de risco nem previsão. Validação final de integração pendente.
+A área protegida inclui uma tela de resultados históricos do SINAN, consumindo `GET /api/indicadores/sinan` com a sessão compartilhada. O backend lê `data-science/saidas/indicador_agregado.json` diretamente; execute o projeto com essa pasta presente. Não há inferência individual, ranking de risco nem previsão. Validação no dispositivo físico permanece pendente.
 
 ### SOS e painel acadêmico de demonstração
 
 Disponível na área protegida e em `http://localhost:3000/painel`. Consulte [guia SOS](docs/entrega-4/sos-painel.md) para habilitar a chave separada do operador e testar com usuário `teste.*`. Nunca utilizar dados de vítimas reais. Implementação acadêmica, sem integração com serviços de emergência; validação visual e de aparelho pendente.
+
+## Documentos de fechamento
+- [DER SQLite v2](docs/der/DER_SQLITE.md) — modelo lógico extraído do SQL implementado.
+- [Relatório de validação final](docs/entrega-4/VALIDACAO_FINAL_2026-11-19.md) — evidências verificadas, comandos e pendências reais.
+- [SOS e painel de demonstração](docs/entrega-4/sos-painel.md).
+
+**Para reprodução:** execute com dados fictícios e configurações locais `.env` / `.env.local`, sem colocar chaves, tokens, bancos pessoais ou credenciais no Git. O protótipo não é um serviço real de emergência.

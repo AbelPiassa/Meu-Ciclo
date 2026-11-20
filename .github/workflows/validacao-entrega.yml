@@ -1,0 +1,99 @@
+name: Validacao e pacote final do Meu Ciclo
+
+on:
+  push:
+    branches:
+      - master
+      - fix/fechamento-abel-20261119
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  aplicativo_e_backend:
+    name: Expo, API e pacote
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Instalar dependencias do app
+        run: npm ci
+      - name: Instalar dependencias da API
+        run: npm ci --prefix backend
+      - name: Testes de frontend e integracao
+        run: npm test
+      - name: Testes do backend e SOS
+        run: npm test --prefix backend
+      - name: Lint backend
+        run: npm run lint --prefix backend
+      - name: Typecheck backend
+        run: npm run typecheck --prefix backend
+      - name: Expo Doctor
+        run: npx --yes expo-doctor
+      - name: Exportacao Web
+        run: npx expo export --platform web --clear
+      - name: Verificar arquivos sensiveis
+        run: |
+          python -c "import subprocess,sys; p=subprocess.check_output(['git','ls-files'],text=True).splitlines(); bad=[f for f in p if f != 'ios/.xcode.env' and (f.endswith('.env') or f.endswith('.env.local') or f.endswith('.sqlite') or '/node_modules/' in f)]; print('Arquivos proibidos:',bad); sys.exit(bool(bad))"
+      - name: Gerar ZIPs a partir do commit testado
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p entrega
+          git archive --format=zip --output=entrega/Meu_Ciclo_Expo_Completo.zip HEAD
+          git archive --format=zip --output=entrega/Meu_Ciclo_API_Backend.zip HEAD backend/
+          git archive --format=zip --output=entrega/Meu_Ciclo_Data_Science.zip HEAD data-science/
+          cp USO_IA.md entrega/USO_IA.md
+          for item in entrega/*.zip; do unzip -t "$item" >/dev/null; done
+          sha256sum entrega/*.zip > entrega/SHA256SUMS.txt
+          printf '%s\n' "$GITHUB_SHA" > entrega/COMMIT.txt
+      - name: Disponibilizar ZIPs para conferencia
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacotes-meu-ciclo-${{ github.sha }}
+          path: entrega/
+          if-no-files-found: error
+          retention-days: 30
+
+  data_science:
+    name: Notebooks SINAN - reproducao automatizada
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: data-science/requirements-ml.txt
+      - name: Instalar dependencias
+        working-directory: data-science
+        run: python -m pip install -r requirements-ml.txt
+      - name: Testes de modelo
+        working-directory: data-science
+        run: python -m unittest discover -s testes -p test_ml_sinan.py -v
+      - name: Executar notebooks com outputs
+        working-directory: data-science
+        run: |
+          python -m jupyter nbconvert --to notebook --execute --inplace notebooks/01_eda_sinan_meu_ciclo.ipynb
+          python -m jupyter nbconvert --to notebook --execute --inplace notebooks/02_classificacao_sinan.ipynb
+          python -m jupyter nbconvert --to notebook --execute --inplace notebooks/03_clusterizacao_sinan.ipynb
+      - name: Disponibilizar notebooks executados
+        uses: actions/upload-artifact@v4
+        with:
+          name: notebooks-executados-${{ github.sha }}
+          path: data-science/notebooks/*.ipynb
+          if-no-files-found: error
+          retention-days: 30
