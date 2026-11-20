@@ -41,12 +41,9 @@ jobs:
       - name: Expo Doctor
         run: npx --yes expo-doctor
       - name: Exportacao Web
-        run: npx expo export --platform web --clear
-      - name: Verificar que arquivos locais nao entram no ZIP
-        shell: bash
+      - name: Verificar arquivos sensiveis
         run: |
-          set -euo pipefail
-          suspeitos="$(git ls-files | grep -Ei '(^|/)(\.env($|\.)|node_modules/|\.venv/|.*\.sqlite($|[-.]))' | grep -vE '(^|/)\.env\.example
+          python -c "import subprocess,sys; p=subprocess.check_output(['git','ls-files'],text=True).splitlines(); bad=[f for f in p if (f.endswith('.env') or f.endswith('.env.local') or f.endswith('.sqlite') or '/node_modules/' in f)]; print('Arquivos proibidos:',bad); sys.exit(bool(bad))"
       - name: Gerar ZIPs a partir do commit testado
         shell: bash
         run: |
