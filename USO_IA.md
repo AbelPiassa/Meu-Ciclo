@@ -283,3 +283,9 @@ Ferramenta: ChatGPT. Auxílio na implementação do endpoint de leitura autentic
 ## 19/11/2026 — SOS e painel acadêmico (Lucca)
 
 Ferramenta: ChatGPT. Auxílio na implementação da migração SQLite v2, endpoint autenticado, painel web com credencial separada e polling, tela Expo de SOS com coordenadas simuladas ou localização consentida do próprio aparelho de teste, testes e documentação. O recurso é exclusivamente demonstrativo; nenhum serviço real é acionado. Testes e validação pelo integrante devem ser registrados após execução.
+
+## 19/11/2026 — Fechamento mobile: canais 180/190 e validação (Kauê, Claude Code)
+
+Ferramenta: Claude Code (Anthropic). Auxílio na leitura do código do `master` (`e0fa3da`), na correção da tela `Canais de Ajuda` (os cartões Ligue 180 e Ligue 190 não tinham ação ao tocar e passaram a abrir o discador com `tel:`, sem realizar a chamada), na criação do teste `tests/canais-ajuda.test.mjs` e no roteiro de validação em aparelho. Os cartões de delegacia/CRAS/CREAS continuam sem contato, pois os dados ainda precisam ser confirmados.
+
+Revisão: o código foi lido e testado pelo integrante. Resultados automáticos no `e0fa3da` (antes da alteração): `npm test` 83/83, backend 12/12, lint e typecheck do backend sem erros, `expo export --platform web` concluído. Depois da alteração: `npm test` 85/85. Os testes em aparelho físico (Expo Go) estão descritos em `docs/VALIDACAO_MOBILE_KAUE.md` e só serão marcados como aprovados depois de executados.
