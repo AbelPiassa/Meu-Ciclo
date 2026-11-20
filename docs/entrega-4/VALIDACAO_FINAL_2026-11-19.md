@@ -83,3 +83,11 @@ Não colocar `.env`, `PAINEL_TOKEN`, senhas, tokens, banco SQLite local, coorden
 - [ ] Comprovante real de envio preservado; não presumir envio
 
 **Pendência de produto:** a opção de tema em Perfil é exibida como texto sem seletor e o próprio app informa que tema/lembretes ainda dependem de integração. Não afirmar essas funções como completas.
+
+## Validação automatizada de finalização — 19/11/2026
+
+GitHub Actions: `.github/workflows/validacao-entrega.yml` foi adicionado à branch de fechamento para executar testes de frontend, backend/SOS, lint/typecheck, Expo Doctor, exportação Web e reprodução automática dos notebooks SINAN. A primeira execução constatou falha do Expo Doctor (19/21 verificações): `expo-font` ausente e Expo em patch anterior ao esperado. Um patch mínimo para o **mesmo SDK 57** foi aplicado no `package.json` e `package-lock.json` da branch; sua aprovação depende de nova execução completa no SHA atualizado.
+
+O job de Data Science da primeira rodada concluiu com sucesso e gerou artefato com três notebooks executados. Não confundir execução automatizada com validação pessoal de Albertini.
+
+A geração de ZIP do projeto somente é tratada como validada após passar a etapa correspondente no workflow. O teste em Expo Go e o envio ao Blackboard continuam exigindo execução humana.
