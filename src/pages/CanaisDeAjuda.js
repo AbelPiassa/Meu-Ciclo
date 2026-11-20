@@ -1,10 +1,39 @@
-import { StyleSheet, Text } from "react-native";
+import { Alert, Linking, StyleSheet, Text } from "react-native";
 import TelaComRolagem from "../components/TelaComRolagem";
 import CartaoLista from "../components/CartaoLista";
 import { canaisAjuda, redeLocalExemplo } from "../dados/dadosFicticios";
 import cores from "../tema/cores";
 
 export default function CanaisDeAjuda() {
+  function abrirDiscador(numero) {
+    const telefone = numero.replace(/\D/g, "");
+
+    if (!["180", "190"].includes(telefone)) {
+      return;
+    }
+
+    Alert.alert(
+      "Abrir discador?",
+      `O número ${telefone} será preenchido no telefone. Esta ação não realiza uma ligação automaticamente.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Abrir discador",
+          onPress: async () => {
+            try {
+              await Linking.openURL(`tel:${telefone}`);
+            } catch {
+              Alert.alert(
+                "Não foi possível abrir o discador",
+                `Digite ${telefone} manualmente no aplicativo de telefone.`
+              );
+            }
+          },
+        },
+      ]
+    );
+  }
+
   return (
     <TelaComRolagem titulo="Canais de Ajuda" subtitulo="Atendimento oficial no Brasil">
       {canaisAjuda.map((canal) => (
@@ -13,6 +42,7 @@ export default function CanaisDeAjuda() {
           icone="call-outline"
           titulo={canal.numero}
           subtitulo={canal.descricao}
+          aoPressionar={() => abrirDiscador(canal.numero)}
         />
       ))}
 
@@ -28,7 +58,12 @@ export default function CanaisDeAjuda() {
       ))}
 
       <Text style={estilos.aviso}>
-        Este aplicativo é um protótipo acadêmico e não substitui atendimento policial, jurídico, psicológico ou de saúde.
+        Abrir o discador não realiza uma ligação automaticamente. Não efetue
+        chamadas reais durante a demonstração acadêmica.
+      </Text>
+      <Text style={estilos.aviso}>
+        Este aplicativo é um protótipo acadêmico e não substitui atendimento
+        policial, jurídico, psicológico ou de saúde.
       </Text>
     </TelaComRolagem>
   );
