@@ -99,6 +99,8 @@ jobs:
           retention-days: 30
 
   preparar_dependencias:
+    permissions:
+      contents: write
     name: Preparar atualizacao de dependencias do Expo 57
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -122,3 +124,13 @@ jobs:
           path: revisao-deps/
           if-no-files-found: error
           retention-days: 7
+      - name: Aplicar patch minimo na branch de finalizacao
+        if: github.event_name == 'push' && github.ref == 'refs/heads/fix/fechamento-abel-20261119'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'fix(deps): adicionar expo-font e atualizar expo no SDK 57'
+            git push origin HEAD:fix/fechamento-abel-20261119
+          fi
