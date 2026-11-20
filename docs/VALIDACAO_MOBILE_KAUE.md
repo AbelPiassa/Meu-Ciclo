@@ -39,7 +39,14 @@ Modelo do aparelho e versão do iOS: _preencher_. Resultados informados pelo int
 | EG-15 | Persistência após logout/login | Aprovado | |
 | EG-17 | Ligue 180 | Aprovado | Abre a confirmação de ligação; cancelado, sem ligar |
 | EG-18 | Ligue 190 | Aprovado | Abre a confirmação de ligação; cancelado, sem ligar |
-| EG-07, EG-10 a EG-14, EG-16, EG-19 a EG-23 | Perfil, Rede de Apoio, Diário, isolamento, indicador SINAN, SOS/painel, reinício da API | Não executado | |
+| EG-07 | Perfil: carregar, editar, salvar e reabrir | Aprovado | |
+| EG-10 | Rede de Apoio CRUD | Aprovado | |
+| EG-11 | Rede de Apoio: máscara e limite de telefone | Aprovado | |
+| EG-12 | Diário CRUD | Aprovado | |
+| EG-13 | Diário: validação de data e descrição | Aprovado | |
+| EG-14 | Isolamento entre contas | Aprovado | |
+| EG-16 | Indicador SINAN | Aprovado | |
+| EG-19 a EG-23 | SOS, painel, status, Quick Exit sem SOS, reinício da API | Não executado | Responsabilidade do Abel na matriz; não informado como executado |
 
 ### Ocorrência durante o teste
 Na primeira tentativa de cadastro apareceu "Não foi possível conectar à API ou o tempo de espera terminou". A API estava acessível pelo iPhone (`/health` ok) e uma requisição equivalente feita pelo navegador do PC funcionou. Na nova tentativa o cadastro funcionou. A causa mais provável é a página carregada antes de a API ser reiniciada com a origem do celular liberada em `CORS_ORIGINS`. Não houve alteração de código.
