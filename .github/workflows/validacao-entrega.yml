@@ -41,6 +41,7 @@ jobs:
       - name: Expo Doctor
         run: npx --yes expo-doctor
       - name: Exportacao Web
+        run: npx expo export --platform web --clear
       - name: Verificar arquivos sensiveis
         run: |
           python -c "import subprocess,sys; p=subprocess.check_output(['git','ls-files'],text=True).splitlines(); bad=[f for f in p if (f.endswith('.env') or f.endswith('.env.local') or f.endswith('.sqlite') or '/node_modules/' in f)]; print('Arquivos proibidos:',bad); sys.exit(bool(bad))"
