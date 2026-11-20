@@ -33,13 +33,13 @@ Este arquivo registra o uso de ferramentas de Inteligência Artificial durante o
 
 | Parte do projeto | Ferramenta | Como foi usada | Revisado por |
 |---|---|---|---|
-| Tela Calendário (`src/pages/Calendario.js`) | Claude Code | Gerar a estrutura do calendário mensal, marcação das fases do ciclo (dados simulados) e estilo | Kaue Vinicius (revisão pendente) |
-| Telas Histórico, Configurações e Sobre | Claude Code | Gerar a estrutura e o estilo conforme o Figma, com dados fictícios | Kaue Vinicius (revisão pendente) |
-| Navegação (`src/routes/`) | Claude Code | Estrutura Stack + Tab e pilha separada da Área Protegida | Kaue Vinicius (revisão pendente) |
-| Gatilho dos 3 toques (`useGatilhoTresToques`) e Quick Exit (`useSaidaRapida`) | Claude Code | Contador de toques com janela de tempo e reset de navegação | Kaue Vinicius (revisão pendente) |
+| Tela Calendário (`src/pages/Calendario.js`) | Claude Code | Gerar a estrutura do calendário mensal, marcação das fases do ciclo (dados simulados) e estilo | Kaue Vinicius (revisado em 19/11/2026) |
+| Telas Histórico, Configurações e Sobre | Claude Code | Gerar a estrutura e o estilo conforme o Figma, com dados fictícios | Kaue Vinicius (revisado em 19/11/2026) |
+| Navegação (`src/routes/`) | Claude Code | Estrutura Stack + Tab e pilha separada da Área Protegida | Kaue Vinicius (revisado em 19/11/2026) |
+| Gatilho dos 3 toques (`useGatilhoTresToques`) e Quick Exit (`useSaidaRapida`) | Claude Code | Contador de toques com janela de tempo e reset de navegação | Kaue Vinicius (revisado em 19/11/2026) |
 | Telas Perfil, Rede de Apoio, Diário, Canais de Ajuda, Login e Cadastro (visual) | Claude Code | Versão visual com dados fictícios para completar a navegação da Entrega 2 | Cada responsável deve revisar a sua tela (Abel, Lucca, Matheus) |
-| Componentes e tema (`src/components/`, `src/tema/`) | Claude Code | Componentes reutilizáveis e paleta de cores do protótipo | Kaue Vinicius (revisão pendente) |
-| Documentação (`docs/`, `USO_IA.md`) | Claude Code | Regras de alteração, registro de alterações, matriz de papéis e este registro | Kaue Vinicius (revisão pendente) |
+| Componentes e tema (`src/components/`, `src/tema/`) | Claude Code | Componentes reutilizáveis e paleta de cores do protótipo | Kaue Vinicius (revisado em 19/11/2026) |
+| Documentação (`docs/`, `USO_IA.md`) | Claude Code | Regras de alteração, registro de alterações, matriz de papéis e este registro | Kaue Vinicius (revisado em 19/11/2026) |
 
 ## Observações do grupo (Claude Code)
 O Claude Code gerou a estrutura e o estilo das telas e da navegação a partir do protótipo do Figma e dos documentos do projeto (guia do professor e documento do grupo). As decisões de escopo foram do integrante. Nenhum dado real é usado: todos os dados são fictícios (guia do professor, Seção 2.3). O código gerado deve ser lido e compreendido pelo responsável antes da apresentação (guia do professor, Seção 7).
@@ -132,7 +132,7 @@ Após Abel identificar ausência de retorno no Login, o assistente adicionou bot
 ## 18/11/2026 — Diagnóstico e documentação de processo (Claude Code)
 **Integrante:** Kaue Vinicius. **Ferramenta:** Claude Code.
 - **Pedido:** analisar o projeto frente ao guia do professor e criar documentação de processo (regras de alteração, checklist, registro). Esses documentos ficam na pasta local do integrante e **não fazem parte do PR #11**.
-- **Revisão:** pendente (Kaue). Nenhum código do app foi alterado nesta etapa.
+- **Revisão:** revisado por Kaue em 19/11/2026. Nenhum código do app foi alterado nesta etapa.
 
 ## 18/11/2026 — CRUD de Ciclos integrado à API (Claude Code)
 **Integrante:** Kaue Vinicius (CRUD de Ciclos, Calendário e Histórico). **Ferramenta:** Claude Code.
@@ -140,7 +140,7 @@ Após Abel identificar ausência de retorno no Login, o assistente adicionou bot
 - **O que a IA fez:** identificou que as versões da raiz de `Calendario.js`/`HistoricoCiclo.js` eram as mais novas e as promoveu para `src/pages/`; criou `src/services/ciclos.js` e as conversões de data; reescreveu `CiclosContext.js` para carregar da API e limpar ao sair; adicionou estados de carregamento, erro e salvamento nas duas telas; escreveu `tests/ciclos-integracao.test.mjs`. Backup antes de cada alteração em `backups/`.
 - **Resultados reais dos testes (executados pelo assistente neste computador):** 2/2 testes de integração, 9/9 testes do backend, lint e typecheck do backend sem erros, bundle web compilado, fluxo funcional no navegador com conta fictícia (cadastro, edição, Calendário, Quick Exit, novo login, exclusão) e confirmação no SQLite.
 - **Não testado:** mensagens de validação na tela, API offline, celular físico, lint/typecheck do app.
-- **Revisão:** pendente (Kaue). O integrante deve ler e conseguir explicar `ciclos.js`, `CiclosContext.js` e as telas antes da apresentação. Nenhuma tela de Perfil, Rede de Apoio ou Diário foi alterada. Dados 100% fictícios.
+- **Revisão:** revisado por Kaue em 19/11/2026; o integrante declarou ter lido e conseguir explicar `ciclos.js`, `CiclosContext.js` e as telas. Nenhuma tela de Perfil, Rede de Apoio ou Diário foi alterada. Dados 100% fictícios.
 
 ## 18/11/2026 — Ajustes de revisão do PR #11 (Claude Code)
 **Integrante:** Kaue Vinicius. **Ferramenta:** Claude Code. Registros dos demais integrantes preservados.
@@ -148,7 +148,7 @@ Após Abel identificar ausência de retorno no Login, o assistente adicionou bot
 - **O que a IA fez:** `CiclosContext.js` (chave de sessão, refs síncronas de carregamento e gravação, escrita recusada sem sessão ou durante carregamento ou outra operação, resultado aplicado só se a sessão for a mesma); `HistoricoCiclo.js` (limpeza ao mudar a sessão, comparação da sessão depois de cada `await`, trava por `useRef`, formulário que só é repreenchido quando o registro selecionado muda, seleção volta a "novo registro" se o registro some); `Calendario.js` (limpeza do mês e do dia selecionados, textos "estimativa" e aviso de que não há garantia clínica nem contraceptiva). Backup antes de editar em `backups/`.
 - **Resultados reais (executados pelo assistente neste computador, dados fictícios):** `node --test tests/ciclos-integracao.test.mjs` 1/1; `node --test tests/perfil-integracao.test.mjs` 1/1; `npm test --prefix backend` 9/9; lint e typecheck do backend sem erros; `expo export --platform web` compilou. No Expo Web com duas contas fictícias: escrita sem sessão recusada com aviso; cadastro, edição, Calendário mostrando o mês salvo; três cliques síncronos em "Salvar" geraram um único registro; logout, 401 (sessões removidas do banco) e Quick Exit limparam formulário, mensagem e registros; a conta B não viu os ciclos da A e o SQLite confirmou cada registro no perfil certo.
 - **Limitações:** as travas e a limpeza são lógica de React, sem teste automatizado (só validação manual na web); a exclusão foi validada na rodada anterior e não foi repetida nesta; sem celular físico nem Expo Go; mensagens de validação de data e API desligada não foram repetidas; o clique duplo foi simulado por eventos no navegador.
-- **Revisão:** pendente (Kaue). O integrante deve conseguir explicar `CiclosContext.js` e `HistoricoCiclo.js` antes da apresentação.
+- **Revisão:** revisado por Kaue em 19/11/2026; o integrante declarou conseguir explicar `CiclosContext.js` e `HistoricoCiclo.js`.
 
 ## 18/11/2026 — Proteção contra condições de corrida na troca de sessão, PR #11 (Claude Code)
 **Integrante:** Kaue Vinicius. **Ferramenta:** Claude Code. Registros dos demais integrantes preservados.
@@ -156,7 +156,7 @@ Após Abel identificar ausência de retorno no Login, o assistente adicionou bot
 - **O que a IA fez:** `CiclosContext.js` passou a guardar o estado com o token do dono e a entregar às telas só o estado da sessão atual (outra sessão = estado vazio, no próprio render); toda decisão de aplicar ou descartar compara com `obterSessao()`; `recarregar()` devolve a mesma promessa se já há listagem da mesma sessão; trava de escrita e de carregamento marcadas com o token. `HistoricoCiclo.js` trocou o ref de render por `obterSessao()`. Novo `tests/ciclos-corrida-sessao.test.mjs`. Backup em `backups/` antes de editar.
 - **Resultados reais (executados pelo assistente neste computador, dados fictícios):** `node --test tests/ciclos-integracao.test.mjs` 1/1; `node --test tests/ciclos-corrida-sessao.test.mjs` 1/1; `node --test tests/perfil-integracao.test.mjs` 1/1; `npm test --prefix backend` 9/9; lint e typecheck do backend sem erros; `expo export --platform web` compilou. No Expo Web, com as respostas de `/api/ciclos` atrasadas em 8 s por um patch de `fetch` e uma observação a cada 150 ms da tela: (1) logout durante a listagem: nenhum registro apareceu em 160 amostras; (2) conta A com listagem lenta, logout e entrada na conta B: só o registro da B apareceu em 151 amostras, nenhum da A; (3) clique em Salvar seguido de logout antes da resposta: "Registro cadastrado" nunca apareceu e a tela ficou limpa, mas o SQLite mostrou que a gravação já enviada foi concluída no servidor (registro da conta B).
 - **Limitações:** o logout não cancela uma gravação que já foi enviada (não há `AbortController`); ela pode concluir no servidor, como observado. A limpeza e os bloqueios do React seguem sem teste automatizado (validação manual na web); o teste novo cobre a regra de comparação no serviço, não o React. Sem celular físico nem Expo Go.
-- **Revisão:** pendente (Kaue).
+- **Revisão:** revisado por Kaue em 19/11/2026.
 
 ## 18/11/2026 — Integração da Rede de Apoio com a API (PR #7)
 
@@ -284,6 +284,11 @@ Ferramenta: ChatGPT. Auxílio na implementação do endpoint de leitura autentic
 
 Ferramenta: ChatGPT. Auxílio na implementação da migração SQLite v2, endpoint autenticado, painel web com credencial separada e polling, tela Expo de SOS com coordenadas simuladas ou localização consentida do próprio aparelho de teste, testes e documentação. O recurso é exclusivamente demonstrativo; nenhum serviço real é acionado. Testes e validação pelo integrante devem ser registrados após execução.
 
+## 19/11/2026 — Fechamento mobile: canais 180/190 e validação (Kauê, Claude Code)
+
+Ferramenta: Claude Code (Anthropic). Auxílio na leitura do código do `master` (`e0fa3da`), na correção da tela `Canais de Ajuda` (os cartões Ligue 180 e Ligue 190 não tinham ação ao tocar e passaram a abrir o discador com `tel:`, sem realizar a chamada), na criação do teste `tests/canais-ajuda.test.mjs` e no roteiro de validação em aparelho. Os cartões de delegacia/CRAS/CREAS continuam sem contato, pois os dados ainda precisam ser confirmados.
+
+Revisão e testes: resultados automáticos no `e0fa3da` (antes da alteração): `npm test` 83/83, backend 12/12, lint e typecheck do backend sem erros, `expo export --platform web` concluído; depois da alteração, `npm test` 85/85. Teste em aparelho em 19/11/2026: iPhone, Safari, app em Expo Web com a API local pela rede Wi-Fi (não foi Expo Go, porque o Expo Go da loja é SDK 58 e o projeto é SDK 57). Resultados informados pelo integrante: aprovados EG-01 a EG-18 nos casos descritos em `docs/VALIDACAO_MOBILE_KAUE.md` (fachada, gatilho, Quick Exit, cadastro, Perfil, Ciclos, Calendário, Rede de Apoio, Diário, isolamento, indicador SINAN, persistência e os cartões 180/190, que abrem a confirmação de ligação, cancelada sem ligar). SOS, painel e reinício da API (EG-19 a EG-23) não foram executados por este integrante. A primeira tentativa de cadastro no iPhone falhou por a página ter sido carregada antes de a API ser reiniciada com a origem do celular liberada; a segunda funcionou, sem alteração de código. Em 19/11/2026 o integrante declarou ter lido e conseguir explicar o código de Ciclos, Calendário, Histórico e Canais de Ajuda.
 
 ## 19/11/2026 — Auditoria e documentação de finalização (Abel + ChatGPT)
 
@@ -293,3 +298,5 @@ Ferramenta: ChatGPT. Auxílio na implementação da migração SQLite v2, endpoi
 - **Revisão necessária:** Abel e Cauê devem conferir o PR, testar os cartões no Android/iOS (sem realizar chamadas), validar o DER e aprovar antes de integrar.
 - **Limitação expressa:** nesta auditoria o assistente consultou os arquivos do GitHub e metadados dos notebooks, mas **não executou** os testes automatizados, Expo Doctor, export Web ou notebooks no checkout completo. Esses resultados permanecem pendentes no SHA final.
 - **Autoria:** os commits feitos pelo assistente nesta etapa não representam execução ou revisão individual por Cauê, Lucca ou Albertini. Não houve ação no Blackboard.
+
+**Atualização da integração — 19/11/2026:** Na resolução de conflitos deste PR, a proposta de discador escrita inicialmente por Abel/ChatGPT foi **substituída**, sem reimplementação, pela versão já testada e integrada pelo Cauê no PR #16. O histórico e os registros de validação do Cauê, incorporados pelo PR #18, foram preservados. O GitHub Actions registrou aprovação dos testes automáticos de frontend, backend/SOS, lint, typecheck, Expo Doctor, exportação Web e reprodução dos notebooks no SHA `d44b3e8a` antes da resolução; a validação do novo merge exige nova execução. Testes físicos pendentes de SOS/painel não foram declarados concluídos.

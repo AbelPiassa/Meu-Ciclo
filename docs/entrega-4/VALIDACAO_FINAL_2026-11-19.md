@@ -17,7 +17,7 @@
 | Sessões e quatro CRUDs | `src/services/` e telas `src/pages/` | Implementados; teste integrado completo pendente |
 | SOS e painel | `backend/src/sos.js`, `backend/painel/`, `src/pages/SosDemo.js` | Implementados; teste físico e visual pendente |
 | Indicador histórico | `data-science/saidas/indicador_agregado.json` e `src/pages/IndicadorSinan.js` | Implementado com aviso; teste no aparelho pendente |
-| Canais 180/190 | `src/pages/CanaisDeAjuda.js` | Correção proposta nesta branch; teste no aparelho pendente |
+| Canais 180/190 | `src/pages/CanaisDeAjuda.js` e `tests/canais-ajuda.test.mjs` | Implementação de Cauê preservada da `master`; testes físicos no iPhone/Safari registrados em `docs/VALIDACAO_MOBILE_KAUE.md` |
 | DER | `docs/der/DER_SQLITE.md` | Criado nesta branch com base no SQL v1/v2 |
 
 ## Data Science — constatação, não nova reprodução
@@ -91,3 +91,7 @@ GitHub Actions: `.github/workflows/validacao-entrega.yml` foi adicionado à bran
 O job de Data Science da primeira rodada concluiu com sucesso e gerou artefato com três notebooks executados. Não confundir execução automatizada com validação pessoal de Albertini.
 
 A geração de ZIP do projeto somente é tratada como validada após passar a etapa correspondente no workflow. O teste em Expo Go e o envio ao Blackboard continuam exigindo execução humana.
+
+## Resolução do PR #17 após merges #16 e #18
+
+A branch de finalização foi combinada com a `master` sem sobrescrever `src/pages/CanaisDeAjuda.js` nem os testes de Cauê. O registro `USO_IA.md` preserva as declarações anteriores e acrescenta a auditoria de Abel/ChatGPT. Os novos artefatos de documentação, dependências e CI foram mantidos; validar novamente os testes no commit do merge e não confundir testes Web no Safari com Expo Go nativo.

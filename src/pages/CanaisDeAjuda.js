@@ -1,37 +1,29 @@
-import { Alert, Linking, StyleSheet, Text } from "react-native";
+import { useState } from "react";
+import { Linking, StyleSheet, Text } from "react-native";
 import TelaComRolagem from "../components/TelaComRolagem";
 import CartaoLista from "../components/CartaoLista";
 import { canaisAjuda, redeLocalExemplo } from "../dados/dadosFicticios";
+import { enderecoDoDiscador, numeroDoCanal } from "../utils/canaisAjuda";
 import cores from "../tema/cores";
 
 export default function CanaisDeAjuda() {
-  function abrirDiscador(numero) {
-    const telefone = numero.replace(/\D/g, "");
+  const [aviso, setAviso] = useState("");
 
-    if (!["180", "190"].includes(telefone)) {
+  // Abre o discador com o número preenchido. Não realiza a chamada: quem decide ligar é a pessoa.
+  async function abrirDiscador(canal) {
+    const numero = numeroDoCanal(canal);
+
+    if (!numero) {
       return;
     }
 
-    Alert.alert(
-      "Abrir discador?",
-      `O número ${telefone} será preenchido no telefone. Esta ação não realiza uma ligação automaticamente.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Abrir discador",
-          onPress: async () => {
-            try {
-              await Linking.openURL(`tel:${telefone}`);
-            } catch {
-              Alert.alert(
-                "Não foi possível abrir o discador",
-                `Digite ${telefone} manualmente no aplicativo de telefone.`
-              );
-            }
-          },
-        },
-      ]
-    );
+    setAviso("");
+
+    try {
+      await Linking.openURL(enderecoDoDiscador(canal));
+    } catch {
+      setAviso(`Não foi possível abrir o discador neste aparelho. Disque ${numero} manualmente.`);
+    }
   }
 
   return (
@@ -41,10 +33,12 @@ export default function CanaisDeAjuda() {
           key={canal.numero}
           icone="call-outline"
           titulo={canal.numero}
-          subtitulo={canal.descricao}
-          aoPressionar={() => abrirDiscador(canal.numero)}
+          subtitulo={`${canal.descricao} • toque para abrir o discador`}
+          aoPressionar={() => abrirDiscador(canal)}
         />
       ))}
+
+      {aviso ? <Text style={estilos.erro}>{aviso}</Text> : null}
 
       <Text style={estilos.subtitulo}>Rede de apoio local</Text>
 
@@ -58,12 +52,7 @@ export default function CanaisDeAjuda() {
       ))}
 
       <Text style={estilos.aviso}>
-        Abrir o discador não realiza uma ligação automaticamente. Não efetue
-        chamadas reais durante a demonstração acadêmica.
-      </Text>
-      <Text style={estilos.aviso}>
-        Este aplicativo é um protótipo acadêmico e não substitui atendimento
-        policial, jurídico, psicológico ou de saúde.
+        Este aplicativo é um protótipo acadêmico e não substitui atendimento policial, jurídico, psicológico ou de saúde.
       </Text>
     </TelaComRolagem>
   );
@@ -80,5 +69,10 @@ const estilos = StyleSheet.create({
   aviso: {
     fontSize: 12,
     color: cores.textoSuave,
+  },
+
+  erro: {
+    fontSize: 13,
+    color: cores.perigo,
   },
 });
