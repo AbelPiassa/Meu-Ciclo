@@ -1,0 +1,20 @@
+raw==simplificado: True | total 2775742
+soma UF==nacional por ano: True | total UF 2775742 | shape (270, 3) | ufs 27 | dup 0 | nulos 0
+--- txt tabnet (primeiras linhas):
+[Ministério da Saúde](http://www.saude.gov.br/) ([image](https://tabnet.datasus.gov.br/cgi/imagem/principal_r1_c1_res.gif))
+
+[**Informações de Saúde**](https://tabnet.datasus.gov.br/tabnet/tabnet.htm "Informações de Saúde")
+
+**DATASUS**  Tecnologia da Informação a Serviço do SUS
+
+[**Ajuda**](https://tabnet.datasus.gov.br/tabnet/tabdescr.htm)
+
+n obs 189 | teste 2024: 27 | balanço teste {1: 19, 0: 8}
+CV F1 macro RF (indep): 0.5625
+Teste 2024 RF (indep): acc 0.4815 F1m 0.4167 balAcc 0.4145 CM [[2, 6], [8, 11]]
+Baseline maioria teste: acc 0.7037
+k 2 sil 0.3607 tamanhos [22, 5]
+k 3 sil 0.4591 tamanhos [3, 22, 2]
+k 4 sil 0.3364 tamanhos [3, 5, 2, 17]
+k 5 sil 0.3815 tamanhos [11, 2, 2, 10, 2]
+k 6 sil 0.3764 tamanhos [5, 2, 10, 2, 6, 2]

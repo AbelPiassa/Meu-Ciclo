@@ -1,0 +1,26 @@
+# Ambiente
+Python 3.12.3
+joblib                    1.6.0
+jupyter                   1.1.1
+matplotlib                3.11.2
+nbconvert                 7.17.2
+numpy                     2.5.5
+pandas                    3.1.1
+scikit-learn              1.9.1
+seaborn                   0.13.2
+v24.22.3
+e0fa3da2e22fb9e758a9362008693cc2e7aea939
+Linux 6.18.44-fc-v726
+
+# python -m unittest (data-science)
+test_alvos (test_ml_sinan.TestML.test_alvos) ... ok
+test_base (test_ml_sinan.TestML.test_base) ... ok
+test_clusters (test_ml_sinan.TestML.test_clusters) ... ok
+test_cv_e_teste (test_ml_sinan.TestML.test_cv_e_teste) ... ok
+test_metricas_classe_unica (test_ml_sinan.TestML.test_metricas_classe_unica) ... ok
+test_sem_vazamento (test_ml_sinan.TestML.test_sem_vazamento) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 1.760s
+
+OK
