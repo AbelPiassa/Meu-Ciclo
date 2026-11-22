@@ -12,7 +12,7 @@ import cores from "../tema/cores";
 import useSessao from "../hooks/useSessao";
 import { obterSessao, obterVersaoSessao } from "../services/sessao.js";
 import { formatarTelefone, telefoneValido } from "../utils/telefoneRedeApoio";
-import { listarContatos, criarContato, atualizarContato, excluirContato } from "../servicos/contatosApi";
+import { listarContatos, criarContato, atualizarContato, excluirContato } from "../services/contatosApi.js";
 
 export default function RedeApoio() {
   const sessao = useSessao();

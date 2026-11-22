@@ -1,5 +1,5 @@
 // Rede de Apoio usa exclusivamente a sessão e o cliente HTTP compartilhados.
-import { obterSessao, requisicaoAutenticada } from '../services/sessao.js';
+import { obterSessao, requisicaoAutenticada } from './sessao.js';
 
 function exigirSessao() {
   const sessao = obterSessao();
