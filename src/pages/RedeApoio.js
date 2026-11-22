@@ -247,11 +247,39 @@ function ContatosDaSessao({ sessao }) {
 }
 
 const estilos = StyleSheet.create({
-  linhaTitulo: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  titulo: { fontSize: 22, fontWeight: "bold", color: cores.textoEscuro },
-  botaoMais: { width: 44, height: 36, borderRadius: 10, backgroundColor: cores.primaria, alignItems: "center", justifyContent: "center" },
-  status: { alignItems: "center", paddingVertical: 12, gap: 8 },
-  subtitulo: { fontSize: 17, fontWeight: "bold", color: cores.textoEscuro, marginTop: 6 },
-  textoApoio: { fontSize: 12, color: cores.textoSuave },
-  textoErro: { color: cores.perigo },
+  linhaTitulo: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "center" 
+  },
+  titulo: { 
+    fontSize: 22, 
+    fontWeight: "bold", 
+    color: cores.textoEscuro 
+  },
+  botaoMais: { 
+    width: 44, 
+    height: 36, borderRadius: 
+    10, backgroundColor: cores.primaria, 
+    alignItems: "center", 
+    justifyContent: "center" 
+  },
+  status: { 
+    alignItems: "center", 
+    paddingVertical: 12, 
+    gap: 8 },
+
+  subtitulo: { 
+    fontSize: 17, 
+    fontWeight: "bold", 
+    color: cores.textoEscuro, 
+    marginTop: 6 },
+
+  textoApoio: { 
+    fontSize: 12, 
+    color: cores.textoSuave 
+  },
+  textoErro: { 
+    color: cores.perigo 
+  },
 });
